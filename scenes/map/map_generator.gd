@@ -12,12 +12,14 @@ var noise = FastNoiseLite.new()
 var map_data = {} # Dictionary to store tile data: {Vector2i(q, r): TileType}
 
 @onready var fog_layer = $"../FogLayer" # Path to your FogLayer node
+@onready var town_marker = $TownMarker # Path to your TownMarker node
 
 func _ready():
 	print("MapLayer ready")
 	generate_map()
 	fill_fog_layer()
 	update_visual_fog()
+	place_town_marker(GameState.landing_site)
 	center_camera_on_landing()
 
 func generate_map():
@@ -80,6 +82,7 @@ func validate_landing_site():
 	# Update GameState with the confirmed landing site
 	print("Setting landing site to ", start_pos)
 	GameState.revealed_cells = [start_pos]
+	GameState.landing_site = start_pos
 
 # 1. Fill everything with black once at start
 func fill_fog_layer():
@@ -102,7 +105,7 @@ func apply_reveal_to_fog_layer(center: Vector2i, radius: int):
 		for r in range(max(-radius, -q - radius), min(radius, -q + radius) + 1):
 			var target = center + Vector2i(q, r)
 			print("Clearing fog at ", target)
-            # -1 removes the black tile from the FogLayer
+			# -1 removes the black tile from the FogLayer
 			fog_layer.set_cell(target, -1)
 
 # Call this function when an expedition finishes!
@@ -140,3 +143,11 @@ func center_camera_on_landing():
 	if camera:
 		camera.position = pixel_pos
 		print("Camera moved to: ", camera.global_position)
+
+func place_town_marker(coords: Vector2i):
+	# map_to_local converts (q, r) to pixels
+	var pixel_pos = map_to_local(coords)
+	town_marker.global_position = pixel_pos
+	
+	# Optional: Give it a high Z-Index so it's always visible above the grass
+	town_marker.z_index = 2

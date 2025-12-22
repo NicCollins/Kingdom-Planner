@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://cviwppuil7kl1"]
+[gd_scene load_steps=10 format=3 uid="uid://cviwppuil7kl1"]
 
 [ext_resource type="Texture2D" uid="uid://bsv68uudwrc00" path="res://multiple_hexagons_pil.png" id="1_p73vr"]
 [ext_resource type="Script" uid="uid://dxk4wrx5171kc" path="res://scenes/map/map_generator.gd" id="1_xej52"]
 [ext_resource type="Script" uid="uid://jjeeus2sgasy" path="res://scenes/canvas_layer.gd" id="2_xej52"]
+[ext_resource type="Texture2D" uid="uid://cxvcohwng0vk1" path="res://assets/multiple_squares_pil.png" id="4_t4bxf"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_p73vr"]
 texture = ExtResource("1_p73vr")
@@ -52,6 +53,10 @@ terrain_set_0/terrain_4/name = "Fog"
 terrain_set_0/terrain_4/color = Color(0.28125, 0.5, 0.25, 1)
 sources/1 = SubResource("TileSetAtlasSource_t4bxf")
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_x628s"]
+atlas = ExtResource("4_t4bxf")
+region = Rect2(0, 0, 16, 16)
+
 [node name="MainGame" type="Node2D"]
 
 [node name="FogLayer" type="TileMapLayer" parent="."]
@@ -62,6 +67,9 @@ tile_set = SubResource("TileSet_p73vr")
 tile_set = SubResource("TileSet_t4bxf")
 occlusion_enabled = false
 script = ExtResource("1_xej52")
+
+[node name="TownMarker" type="Sprite2D" parent="MapManager"]
+texture = SubResource("AtlasTexture_x628s")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 script = ExtResource("2_xej52")

@@ -13,7 +13,8 @@ var max_wood_efficiency: float = 0.0
 
 # --- Fog of War & Discovery ---
 # Stores coordinates of hexes the player has revealed
-var revealed_cells: Array[Vector2i] = [] 
+var revealed_cells: Array[Vector2i] = []
+var landing_site: Vector2i = Vector2i(0, 0)
 
 # --- Time/Seasons ---
 var current_day: int = 1
