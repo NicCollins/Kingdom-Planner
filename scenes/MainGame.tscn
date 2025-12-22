@@ -1,9 +1,15 @@
-[gd_scene load_steps=10 format=3 uid="uid://cviwppuil7kl1"]
+[gd_scene load_steps=14 format=3 uid="uid://cviwppuil7kl1"]
 
 [ext_resource type="Texture2D" uid="uid://bsv68uudwrc00" path="res://multiple_hexagons_pil.png" id="1_p73vr"]
+[ext_resource type="Script" uid="uid://brgi7unceqes1" path="res://scenes/main_game.gd" id="1_x628s"]
 [ext_resource type="Script" uid="uid://dxk4wrx5171kc" path="res://scenes/map/map_generator.gd" id="1_xej52"]
 [ext_resource type="Script" uid="uid://jjeeus2sgasy" path="res://scenes/canvas_layer.gd" id="2_xej52"]
+[ext_resource type="Script" uid="uid://bxqauubv57e76" path="res://scenes/tab_container.gd" id="3_fpdtd"]
 [ext_resource type="Texture2D" uid="uid://cxvcohwng0vk1" path="res://assets/multiple_squares_pil.png" id="4_t4bxf"]
+[ext_resource type="Script" uid="uid://ctf03pygws4qc" path="res://scenes/work.gd" id="6_7fyak"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7fyak"]
+bg_color = Color(0.101960786, 0.101960786, 0.101960786, 0.78431374)
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_p73vr"]
 texture = ExtResource("1_p73vr")
@@ -58,18 +64,7 @@ atlas = ExtResource("4_t4bxf")
 region = Rect2(0, 0, 16, 16)
 
 [node name="MainGame" type="Node2D"]
-
-[node name="FogLayer" type="TileMapLayer" parent="."]
-z_index = 1
-tile_set = SubResource("TileSet_p73vr")
-
-[node name="MapManager" type="TileMapLayer" parent="."]
-tile_set = SubResource("TileSet_t4bxf")
-occlusion_enabled = false
-script = ExtResource("1_xej52")
-
-[node name="TownMarker" type="Sprite2D" parent="MapManager"]
-texture = SubResource("AtlasTexture_x628s")
+script = ExtResource("1_x628s")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 script = ExtResource("2_xej52")
@@ -85,5 +80,88 @@ layout_mode = 2
 [node name="FoodLabel" type="Label" parent="CanvasLayer/PanelContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="TimeLabel" type="Label" parent="CanvasLayer/PanelContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="TabContainer" type="TabContainer" parent="CanvasLayer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 0
+script = ExtResource("3_fpdtd")
+
+[node name="Work" type="PanelContainer" parent="CanvasLayer/TabContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_7fyak")
+script = ExtResource("6_7fyak")
+metadata/_tab_index = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/TabContainer/Work"]
+layout_mode = 2
+
+[node name="UnassignedLabel" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer"]
+layout_mode = 2
+
+[node name="FoodRow" type="HBoxContainer" parent="CanvasLayer/TabContainer/Work/VBoxContainer"]
+layout_mode = 2
+
+[node name="Foragers" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
+layout_mode = 2
+text = "Foragers"
+
+[node name="HSlider" type="HSlider" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
+layout_mode = 2
+
+[node name="WoodRow" type="HBoxContainer" parent="CanvasLayer/TabContainer/Work/VBoxContainer"]
+layout_mode = 2
+
+[node name="Woodcutters" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
+layout_mode = 2
+text = "Woodcutters"
+
+[node name="HSlider" type="HSlider" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
+layout_mode = 2
+
+[node name="Map" type="SubViewportContainer" parent="CanvasLayer/TabContainer"]
+visible = false
+layout_mode = 2
+stretch = true
+metadata/_tab_index = 1
+
+[node name="SubViewport" type="SubViewport" parent="CanvasLayer/TabContainer/Map"]
+size = Vector2i(40, 40)
+
+[node name="FogLayer" type="TileMapLayer" parent="CanvasLayer/TabContainer/Map/SubViewport"]
+z_index = 1
+tile_set = SubResource("TileSet_p73vr")
+
+[node name="MapManager" type="TileMapLayer" parent="CanvasLayer/TabContainer/Map/SubViewport"]
+unique_name_in_owner = true
+tile_set = SubResource("TileSet_t4bxf")
+occlusion_enabled = false
+script = ExtResource("1_xej52")
+
+[node name="TownMarker" type="Sprite2D" parent="CanvasLayer/TabContainer/Map/SubViewport/MapManager"]
+texture = SubResource("AtlasTexture_x628s")
+
+[node name="Camera2D" type="Camera2D" parent="CanvasLayer/TabContainer/Map/SubViewport"]
 zoom = Vector2(0.5, 0.5)
+
+[node name="GameTickTimer" type="Timer" parent="."]
+autostart = true
+
+[connection signal="timeout" from="GameTickTimer" to="." method="_on_game_tick_timer_timeout"]
