@@ -70,8 +70,10 @@ script = ExtResource("1_x628s")
 script = ExtResource("2_xej52")
 
 [node name="PanelContainer" type="PanelContainer" parent="CanvasLayer"]
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 23.0
+grow_horizontal = 2
 mouse_filter = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/PanelContainer"]
@@ -79,20 +81,17 @@ layout_mode = 2
 
 [node name="FoodLabel" type="Label" parent="CanvasLayer/PanelContainer/HBoxContainer"]
 layout_mode = 2
+text = "Food"
 
 [node name="TimeLabel" type="Label" parent="CanvasLayer/PanelContainer/HBoxContainer"]
 layout_mode = 2
+text = "Time"
 
 [node name="TabContainer" type="TabContainer" parent="CanvasLayer"]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 23.0
 grow_horizontal = 2
 grow_vertical = 2
 current_tab = 0
@@ -112,6 +111,7 @@ layout_mode = 2
 
 [node name="FoodRow" type="HBoxContainer" parent="CanvasLayer/TabContainer/Work/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 20
 
 [node name="Foragers" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
 layout_mode = 2
@@ -119,12 +119,15 @@ text = "Foragers"
 
 [node name="HSlider" type="HSlider" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="Label2" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
+[node name="ForagerCount" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/FoodRow"]
 layout_mode = 2
+text = "0"
 
 [node name="WoodRow" type="HBoxContainer" parent="CanvasLayer/TabContainer/Work/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 20
 
 [node name="Woodcutters" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
 layout_mode = 2
@@ -132,9 +135,11 @@ text = "Woodcutters"
 
 [node name="HSlider" type="HSlider" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="Label2" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
+[node name="WoodcutterCount" type="Label" parent="CanvasLayer/TabContainer/Work/VBoxContainer/WoodRow"]
 layout_mode = 2
+text = "0"
 
 [node name="Map" type="SubViewportContainer" parent="CanvasLayer/TabContainer"]
 visible = false
