@@ -66,12 +66,7 @@ const validateMapRatios = (tiles: Map<string, HexTile>): boolean => {
   const forestPct = forest / total;
   const mountainPct = mountain / total;
 
-  // Constraints for a playable map:
-  // - Water: 5-20% (some, but not overwhelming)
-  // - Field: at least 25% (need farming)
-  // - Forest: at least 20% (need wood)
-  // - Mountain: at least 10% (need stone)
-
+  // Constraints for a playable map
   return (
     waterPct >= 0.05 &&
     waterPct <= 0.2 &&
@@ -160,7 +155,7 @@ const generateValidMap = (): {
   console.warn(
     "Could not generate valid map after 100 attempts, using fallback"
   );
-  const seed = 42; // Fixed seed for fallback
+  const seed = 42;
   const tiles = new Map<string, HexTile>();
 
   for (let q = -7; q <= 7; q++) {
@@ -168,7 +163,6 @@ const generateValidMap = (): {
       if (Math.abs(q + r) > 7) continue;
       const key = `${q},${r}`;
 
-      // Simple deterministic layout for fallback
       let terrain: TerrainType = "field";
       const dist = Math.sqrt(q * q + r * r);
       if (dist > 6) terrain = "water";
@@ -187,10 +181,10 @@ const generateValidMap = (): {
 // Time speed options (in milliseconds)
 const TIME_SPEEDS = {
   paused: 0,
-  slow: 2000, // 1 tick every 2 seconds
-  normal: 1000, // 1 tick every second
-  fast: 500, // 2 ticks per second
-  veryFast: 250, // 4 ticks per second
+  slow: 2000,
+  normal: 1000,
+  fast: 500,
+  veryFast: 250,
 } as const;
 
 type TimeSpeed = keyof typeof TIME_SPEEDS;
@@ -202,7 +196,6 @@ const useGameState = () => {
   // Generate a validated map with proper ratios
   const [mapData] = useState(() => generateValidMap());
   const mapTiles = mapData.tiles;
-  const mapSeed = mapData.seed;
   const colonyLocation = mapData.colonyLocation;
 
   // Reveal starting area (3-tile radius around colony)
@@ -282,9 +275,9 @@ const useGameState = () => {
         });
 
         // Production calculations (modified by available terrain)
-        const fieldMultiplier = Math.min(1.0, fieldCount / 10); // Need fields for farming
-        const forestMultiplier = Math.min(1.0, forestCount / 5); // Need forest for wood
-        const mountainMultiplier = Math.min(1.0, mountainCount / 3); // Need mountains for stone
+        const fieldMultiplier = Math.min(1.0, fieldCount / 10);
+        const forestMultiplier = Math.min(1.0, forestCount / 5);
+        const mountainMultiplier = Math.min(1.0, mountainCount / 3);
 
         const grainProduced = Math.floor(
           prev.farmers * 0.5 * prev.happiness * fieldMultiplier
@@ -364,13 +357,13 @@ const useGameState = () => {
     }, TIME_SPEEDS[timeSpeed]);
 
     return () => clearInterval(tick);
-  }, [timeSpeed, gameStarted]);
+  }, [timeSpeed, gameStarted, mapTiles]);
 
   const allocateLabor = (job: string, amount: number) => {
     setState((prev) => {
       const total =
         prev.farmers + prev.woodcutters + prev.gatherers + prev.idle;
-      if (total !== prev.population) return prev; // Safety check
+      if (total !== prev.population) return prev;
 
       const newState = {
         ...prev,
@@ -436,10 +429,10 @@ const HexMap: React.FC<{
 
       // Terrain colors
       const terrainColors: Record<TerrainType, number> = {
-        field: 0x8b7355, // Brown fields
-        forest: 0x2d5016, // Dark green
-        mountain: 0x606060, // Gray
-        water: 0x1e3a5f, // Blue
+        field: 0x8b7355,
+        forest: 0x2d5016,
+        mountain: 0x606060,
+        water: 0x1e3a5f,
       };
 
       const terrainBorders: Record<TerrainType, number> = {
@@ -481,7 +474,6 @@ const HexMap: React.FC<{
         const y = 200 + hexSize * (3 / 2) * tile.r;
 
         if (tile.revealed) {
-          // Show terrain
           drawHex(
             x,
             y,
@@ -490,7 +482,6 @@ const HexMap: React.FC<{
             terrainBorders[tile.terrain]
           );
         } else {
-          // Fog of war
           drawHex(x, y, hexSize, 0x0a0a0a, 0x333333);
         }
       });
@@ -502,7 +493,7 @@ const HexMap: React.FC<{
       const colonyY = 200 + hexSize * (3 / 2) * colonyLocation.r;
 
       // Draw a glowing circle for the colony
-      graphics.beginFill(0xffd700, 0.3); // Gold with transparency
+      graphics.beginFill(0xffd700, 0.3);
       graphics.lineStyle(3, 0xffd700);
       graphics.drawCircle(colonyX, colonyY, hexSize * 0.6);
       graphics.endFill();
@@ -545,15 +536,244 @@ export default function KingdomPlanner() {
     colonyLocation,
   } = useGameState();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [debugMode, setDebugMode] = useState(false);
 
   // Auto-scroll chronicle to bottom when new entries are added
   useEffect(() => {
     if (chronicleRef.current) {
       chronicleRef.current.scrollTop = chronicleRef.current.scrollHeight;
     }
-  }, [chronicle]);
+  }, [chronicle, chronicleRef]);
+
+  // Keyboard shortcut for debug mode (D key)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "d" || e.key === "D") {
+        if (
+          !(e.target instanceof HTMLInputElement) &&
+          !(e.target instanceof HTMLTextAreaElement)
+        ) {
+          setDebugMode((prev) => !prev);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
 
   const tabs = ["Dashboard", "Labor", "Map", "Resources"];
+
+  // Debug panel component
+  const DebugPanel = () => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Calculate map stats
+    let water = 0,
+      field = 0,
+      forest = 0,
+      mountain = 0,
+      revealed = 0;
+    mapTiles.forEach((tile) => {
+      if (tile.terrain === "water") water++;
+      if (tile.terrain === "field") field++;
+      if (tile.terrain === "forest") forest++;
+      if (tile.terrain === "mountain") mountain++;
+      if (tile.revealed) revealed++;
+    });
+    const total = mapTiles.size;
+    const mapStats = {
+      total,
+      revealed,
+      water: { count: water, pct: ((water / total) * 100).toFixed(1) },
+      field: { count: field, pct: ((field / total) * 100).toFixed(1) },
+      forest: { count: forest, pct: ((forest / total) * 100).toFixed(1) },
+      mountain: { count: mountain, pct: ((mountain / total) * 100).toFixed(1) },
+    };
+
+    // Calculate terrain bonuses
+    let fieldCount = 0,
+      forestCount = 0,
+      mountainCount = 0;
+    mapTiles.forEach((tile) => {
+      if (tile.revealed) {
+        if (tile.terrain === "field") fieldCount++;
+        if (tile.terrain === "forest") forestCount++;
+        if (tile.terrain === "mountain") mountainCount++;
+      }
+    });
+    const fieldMult = Math.min(1.0, fieldCount / 10);
+    const forestMult = Math.min(1.0, forestCount / 5);
+    const mountainMult = Math.min(1.0, mountainCount / 3);
+
+    return (
+      <div className="fixed top-4 right-4 bg-black/90 border border-amber-600 rounded-lg p-4 text-xs font-mono max-w-sm z-50">
+        <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
+          <h3 className="text-amber-400 font-bold">DEBUG MODE</h3>
+          <button
+            onClick={() => setDebugMode(false)}
+            className="text-red-400 hover:text-red-300 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div
+          ref={scrollContainerRef}
+          className="space-y-3 max-h-96 overflow-y-auto"
+        >
+          {/* Game State */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">Game State</div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>
+                Day: {state.day} ({state.season})
+              </div>
+              <div>
+                Time Speed: {timeSpeed} ({TIME_SPEEDS[timeSpeed]}ms)
+              </div>
+              <div>Game Started: {gameStarted ? "Yes" : "No"}</div>
+            </div>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">Resources</div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>Grain: {state.grain}</div>
+              <div>Wood: {state.wood}</div>
+              <div>Stone: {state.stone}</div>
+              <div>Tools: {state.tools}</div>
+              <div className="text-yellow-400">
+                Happiness: {(state.happiness * 100).toFixed(1)}%
+              </div>
+            </div>
+          </div>
+
+          {/* Labor */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">
+              Labor Allocation
+            </div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>Population: {state.population}</div>
+              <div>Farmers: {state.farmers}</div>
+              <div>Woodcutters: {state.woodcutters}</div>
+              <div>Gatherers: {state.gatherers}</div>
+              <div>Idle: {state.idle}</div>
+              <div className="text-red-400">
+                {state.farmers +
+                  state.woodcutters +
+                  state.gatherers +
+                  state.idle !==
+                  state.population && "⚠️ Labor mismatch!"}
+              </div>
+            </div>
+          </div>
+
+          {/* Production */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">
+              Production Rates
+            </div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>
+                Grain:{" "}
+                {Math.floor(state.farmers * 0.5 * state.happiness * fieldMult)}
+                /day
+                <span className="text-gray-500">
+                  {" "}
+                  (×{(fieldMult * 100).toFixed(0)}%)
+                </span>
+              </div>
+              <div>
+                Wood:{" "}
+                {Math.floor(
+                  Math.min(state.woodcutters, state.tools) * 0.3 * forestMult
+                )}
+                /day
+                <span className="text-gray-500">
+                  {" "}
+                  (×{(forestMult * 100).toFixed(0)}%)
+                </span>
+              </div>
+              <div>
+                Stone: {Math.floor(state.gatherers * 0.2 * mountainMult)}/day
+                <span className="text-gray-500">
+                  {" "}
+                  (×{(mountainMult * 100).toFixed(0)}%)
+                </span>
+              </div>
+              <div className="text-red-400">
+                Consumption: {Math.floor(state.population * 0.1)}/day
+              </div>
+            </div>
+          </div>
+
+          {/* Map Statistics */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">
+              Map Statistics
+            </div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>
+                Colony: ({colonyLocation.q}, {colonyLocation.r})
+              </div>
+              <div>Total Tiles: {mapStats.total}</div>
+              <div>
+                Revealed: {mapStats.revealed} (
+                {((mapStats.revealed / mapStats.total) * 100).toFixed(1)}%)
+              </div>
+              <div className="mt-1 pt-1 border-t border-gray-700">
+                Terrain Distribution:
+              </div>
+              <div>
+                Water: {mapStats.water.count} ({mapStats.water.pct}%)
+              </div>
+              <div>
+                Fields: {mapStats.field.count} ({mapStats.field.pct}%)
+              </div>
+              <div>
+                Forest: {mapStats.forest.count} ({mapStats.forest.pct}%)
+              </div>
+              <div>
+                Mountain: {mapStats.mountain.count} ({mapStats.mountain.pct}%)
+              </div>
+              <div className="mt-1 pt-1 border-t border-gray-700">
+                Revealed Terrain:
+              </div>
+              <div>Fields: {fieldCount} (need 10 for 100%)</div>
+              <div>Forest: {forestCount} (need 5 for 100%)</div>
+              <div>Mountain: {mountainCount} (need 3 for 100%)</div>
+            </div>
+          </div>
+
+          {/* Chronicle */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">Chronicle</div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>Total Entries: {chronicle.length}</div>
+              <div>Latest: Day {chronicle[chronicle.length - 1]?.day}</div>
+            </div>
+          </div>
+
+          {/* Performance */}
+          <div>
+            <div className="text-amber-300 font-semibold mb-1">Performance</div>
+            <div className="text-gray-300 space-y-0.5">
+              <div>FPS: {Math.round(1000 / (TIME_SPEEDS[timeSpeed] || 1))}</div>
+              <div>
+                Ticks/sec:{" "}
+                {timeSpeed === "paused"
+                  ? 0
+                  : (1000 / TIME_SPEEDS[timeSpeed]).toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Colony Charter Screen
   if (!gameStarted) {
@@ -642,6 +862,18 @@ export default function KingdomPlanner() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4">
+      {/* Debug Toggle - Always visible */}
+      <button
+        onClick={() => setDebugMode(!debugMode)}
+        className="fixed top-4 right-4 z-50 px-3 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-xs font-mono transition-colors"
+        title="Toggle Debug Mode (D)"
+      >
+        {debugMode ? "🐛 ON" : "🐛 OFF"}
+      </button>
+
+      {/* Debug Panel */}
+      {debugMode && <DebugPanel />}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-gray-800 rounded-lg p-6 mb-4 border border-gray-700">
