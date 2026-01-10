@@ -11,15 +11,35 @@ interface HexTile {
   revealed: boolean;
 }
 
-// Generate procedural terrain using a simple noise-like function
-const generateTerrain = (q: number, r: number): TerrainType => {
-  // Use position-based pseudo-random generation
-  const hash = (q * 374761393 + r * 668265263) & 0xffffffff;
-  const value = ((hash ^ (hash >> 16)) & 0xffff) / 0xffff;
+// Simple hash function for pseudo-random generation
+const hashCoords = (q: number, r: number, seed: number): number => {
+  let hash = seed;
+  hash = (hash << 5) - hash + q;
+  hash = (hash << 5) - hash + r;
+  hash = hash & hash; // Convert to 32-bit integer
+  return Math.abs(hash);
+};
 
-  if (value < 0.1) return "water";
-  if (value < 0.3) return "mountain";
-  if (value < 0.6) return "forest";
+// Generate procedural terrain using improved noise-like function
+const generateTerrain = (q: number, r: number, seed: number): TerrainType => {
+  // Multi-scale noise for more natural patterns
+  const scale1 =
+    hashCoords(Math.floor(q / 2), Math.floor(r / 2), seed) / 0xffffffff;
+  const scale2 = hashCoords(q, r, seed + 1000) / 0xffffffff;
+  const scale3 = hashCoords(q * 2, r * 2, seed + 2000) / 0xffffffff;
+
+  // Blend different scales for more organic look
+  const value = scale1 * 0.5 + scale2 * 0.3 + scale3 * 0.2;
+
+  // Distance from center affects terrain (less water near spawn)
+  const distFromCenter = Math.sqrt(q * q + r * r);
+  const centerBias = Math.max(0, 1 - distFromCenter / 8);
+
+  const adjustedValue = value * (1 - centerBias * 0.3);
+
+  if (adjustedValue < 0.15) return "water";
+  if (adjustedValue < 0.35) return "mountain";
+  if (adjustedValue < 0.65) return "forest";
   return "field";
 };
 
@@ -38,6 +58,27 @@ type TimeSpeed = keyof typeof TIME_SPEEDS;
 const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
 
+  // Generate a random seed for this game session
+  const [mapSeed] = useState(() => Math.floor(Math.random() * 1000000));
+  const [colonyLocation] = useState<{ q: number; r: number }>(() => {
+    // Try to find a non-water tile near origin for colony
+    for (let q = -1; q <= 1; q++) {
+      for (let r = -1; r <= 1; r++) {
+        if (Math.abs(q + r) > 1) continue;
+        const terrain = generateTerrain(
+          q,
+          r,
+          Math.floor(Math.random() * 1000000)
+        );
+        if (terrain !== "water") {
+          return { q, r };
+        }
+      }
+    }
+    // Fallback: force origin to be a field
+    return { q: 0, r: 0 };
+  });
+
   // Initialize map tiles
   const [mapTiles] = useState<Map<string, HexTile>>(() => {
     const tiles = new Map<string, HexTile>();
@@ -46,15 +87,26 @@ const useGameState = () => {
       for (let r = -7; r <= 7; r++) {
         if (Math.abs(q + r) > 7) continue;
         const key = `${q},${r}`;
+        let terrain = generateTerrain(q, r, mapSeed);
+
+        // Force colony location to be non-water
+        if (
+          q === colonyLocation.q &&
+          r === colonyLocation.r &&
+          terrain === "water"
+        ) {
+          terrain = "field";
+        }
+
         tiles.set(key, {
           q,
           r,
-          terrain: generateTerrain(q, r),
+          terrain,
           revealed: false,
         });
       }
     }
-    // Reveal starting area (3-tile radius around origin)
+    // Reveal starting area (3-tile radius around colony)
     for (let q = -2; q <= 2; q++) {
       for (let r = -2; r <= 2; r++) {
         if (Math.abs(q + r) > 2) continue;
@@ -243,11 +295,15 @@ const useGameState = () => {
     chronicle,
     chronicleRef,
     mapTiles,
+    colonyLocation,
   };
 };
 
 // Simple hex map component using PixiJS
-const HexMap: React.FC<{ mapTiles: Map<string, HexTile> }> = ({ mapTiles }) => {
+const HexMap: React.FC<{
+  mapTiles: Map<string, HexTile>;
+  colonyLocation: { q: number; r: number };
+}> = ({ mapTiles, colonyLocation }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
 
@@ -338,6 +394,24 @@ const HexMap: React.FC<{ mapTiles: Map<string, HexTile> }> = ({ mapTiles }) => {
         }
       });
 
+      // Draw colony marker
+      const colonyX =
+        300 +
+        hexSize * Math.sqrt(3) * (colonyLocation.q + colonyLocation.r / 2);
+      const colonyY = 200 + hexSize * (3 / 2) * colonyLocation.r;
+
+      // Draw a glowing circle for the colony
+      graphics.beginFill(0xffd700, 0.3); // Gold with transparency
+      graphics.lineStyle(3, 0xffd700);
+      graphics.drawCircle(colonyX, colonyY, hexSize * 0.6);
+      graphics.endFill();
+
+      // Draw a smaller solid center
+      graphics.beginFill(0xffd700);
+      graphics.lineStyle(0);
+      graphics.drawCircle(colonyX, colonyY, 4);
+      graphics.endFill();
+
       app.stage.addChild(graphics);
     };
 
@@ -350,7 +424,7 @@ const HexMap: React.FC<{ mapTiles: Map<string, HexTile> }> = ({ mapTiles }) => {
         appRef.current = null;
       }
     };
-  }, [mapTiles]);
+  }, [mapTiles, colonyLocation]);
 
   return <div ref={containerRef} className="border border-gray-700 rounded" />;
 };
@@ -367,6 +441,7 @@ export default function KingdomPlanner() {
     chronicle,
     chronicleRef,
     mapTiles,
+    colonyLocation,
   } = useGameState();
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -788,7 +863,7 @@ export default function KingdomPlanner() {
               </div>
 
               <div className="flex justify-center">
-                <HexMap mapTiles={mapTiles} />
+                <HexMap mapTiles={mapTiles} colonyLocation={colonyLocation} />
               </div>
 
               {/* Terrain statistics */}
