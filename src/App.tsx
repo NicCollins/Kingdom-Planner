@@ -37,10 +37,151 @@ const generateTerrain = (q: number, r: number, seed: number): TerrainType => {
 
   const adjustedValue = value * (1 - centerBias * 0.3);
 
-  if (adjustedValue < 0.15) return "water";
+  // Adjusted thresholds to reduce water
+  if (adjustedValue < 0.12) return "water";
   if (adjustedValue < 0.35) return "mountain";
   if (adjustedValue < 0.65) return "forest";
   return "field";
+};
+
+// Validate that a map has playable terrain ratios
+const validateMapRatios = (tiles: Map<string, HexTile>): boolean => {
+  let water = 0,
+    field = 0,
+    forest = 0,
+    mountain = 0;
+
+  tiles.forEach((tile) => {
+    if (tile.terrain === "water") water++;
+    if (tile.terrain === "field") field++;
+    if (tile.terrain === "forest") forest++;
+    if (tile.terrain === "mountain") mountain++;
+  });
+
+  const total = tiles.size;
+
+  // Define acceptable ranges (as percentages)
+  const waterPct = water / total;
+  const fieldPct = field / total;
+  const forestPct = forest / total;
+  const mountainPct = mountain / total;
+
+  // Constraints for a playable map:
+  // - Water: 5-20% (some, but not overwhelming)
+  // - Field: at least 25% (need farming)
+  // - Forest: at least 20% (need wood)
+  // - Mountain: at least 10% (need stone)
+
+  return (
+    waterPct >= 0.05 &&
+    waterPct <= 0.2 &&
+    fieldPct >= 0.25 &&
+    forestPct >= 0.2 &&
+    mountainPct >= 0.1
+  );
+};
+
+// Generate a complete map with validation
+const generateValidMap = (): {
+  tiles: Map<string, HexTile>;
+  seed: number;
+  colonyLocation: { q: number; r: number };
+} => {
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  while (attempts < maxAttempts) {
+    const seed = Math.floor(Math.random() * 1000000);
+    const tiles = new Map<string, HexTile>();
+
+    // Generate all tiles
+    for (let q = -7; q <= 7; q++) {
+      for (let r = -7; r <= 7; r++) {
+        if (Math.abs(q + r) > 7) continue;
+        const key = `${q},${r}`;
+        const terrain = generateTerrain(q, r, seed);
+
+        tiles.set(key, {
+          q,
+          r,
+          terrain,
+          revealed: false,
+        });
+      }
+    }
+
+    // Validate ratios
+    if (validateMapRatios(tiles)) {
+      // Find a suitable colony location (non-water, preferably field)
+      let colonyLocation = { q: 0, r: 0 };
+
+      // Try to find a field near origin
+      for (let q = -1; q <= 1; q++) {
+        for (let r = -1; r <= 1; r++) {
+          if (Math.abs(q + r) > 1) continue;
+          const tile = tiles.get(`${q},${r}`);
+          if (tile && tile.terrain === "field") {
+            colonyLocation = { q, r };
+            break;
+          }
+        }
+      }
+
+      // If no field found, find any non-water
+      if (colonyLocation.q === 0 && colonyLocation.r === 0) {
+        const centerTile = tiles.get("0,0");
+        if (centerTile && centerTile.terrain === "water") {
+          for (let q = -1; q <= 1; q++) {
+            for (let r = -1; r <= 1; r++) {
+              if (Math.abs(q + r) > 1) continue;
+              const tile = tiles.get(`${q},${r}`);
+              if (tile && tile.terrain !== "water") {
+                colonyLocation = { q, r };
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      // Force colony location to be a field if it's water
+      const colonyTile = tiles.get(`${colonyLocation.q},${colonyLocation.r}`);
+      if (colonyTile && colonyTile.terrain === "water") {
+        colonyTile.terrain = "field";
+      }
+
+      return { tiles, seed, colonyLocation };
+    }
+
+    attempts++;
+  }
+
+  // Fallback: create a guaranteed playable map
+  console.warn(
+    "Could not generate valid map after 100 attempts, using fallback"
+  );
+  const seed = 42; // Fixed seed for fallback
+  const tiles = new Map<string, HexTile>();
+
+  for (let q = -7; q <= 7; q++) {
+    for (let r = -7; r <= 7; r++) {
+      if (Math.abs(q + r) > 7) continue;
+      const key = `${q},${r}`;
+
+      // Simple deterministic layout for fallback
+      let terrain: TerrainType = "field";
+      const dist = Math.sqrt(q * q + r * r);
+      if (dist > 6) terrain = "water";
+      else if (Math.abs(q) > 4 || Math.abs(r) > 4) terrain = "forest";
+      else if (Math.abs(q) < 2 && Math.abs(r) < 2) terrain = "field";
+      else if ((q + r) % 3 === 0) terrain = "mountain";
+      else if ((q + r) % 3 === 1) terrain = "forest";
+
+      tiles.set(key, { q, r, terrain, revealed: false });
+    }
+  }
+
+  return { tiles, seed, colonyLocation: { q: 0, r: 0 } };
 };
 
 // Time speed options (in milliseconds)
@@ -58,63 +199,23 @@ type TimeSpeed = keyof typeof TIME_SPEEDS;
 const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
 
-  // Generate a random seed for this game session
-  const [mapSeed] = useState(() => Math.floor(Math.random() * 1000000));
-  const [colonyLocation] = useState<{ q: number; r: number }>(() => {
-    // Try to find a non-water tile near origin for colony
-    for (let q = -1; q <= 1; q++) {
-      for (let r = -1; r <= 1; r++) {
-        if (Math.abs(q + r) > 1) continue;
-        const terrain = generateTerrain(
-          q,
-          r,
-          Math.floor(Math.random() * 1000000)
-        );
-        if (terrain !== "water") {
-          return { q, r };
-        }
-      }
-    }
-    // Fallback: force origin to be a field
-    return { q: 0, r: 0 };
-  });
+  // Generate a validated map with proper ratios
+  const [mapData] = useState(() => generateValidMap());
+  const mapTiles = mapData.tiles;
+  const mapSeed = mapData.seed;
+  const colonyLocation = mapData.colonyLocation;
 
-  // Initialize map tiles
-  const [mapTiles] = useState<Map<string, HexTile>>(() => {
-    const tiles = new Map<string, HexTile>();
-    // Generate a 15x15 hex grid
-    for (let q = -7; q <= 7; q++) {
-      for (let r = -7; r <= 7; r++) {
-        if (Math.abs(q + r) > 7) continue;
-        const key = `${q},${r}`;
-        let terrain = generateTerrain(q, r, mapSeed);
-
-        // Force colony location to be non-water
-        if (
-          q === colonyLocation.q &&
-          r === colonyLocation.r &&
-          terrain === "water"
-        ) {
-          terrain = "field";
-        }
-
-        tiles.set(key, {
-          q,
-          r,
-          terrain,
-          revealed: false,
-        });
-      }
-    }
-    // Reveal starting area (3-tile radius around colony)
+  // Reveal starting area (3-tile radius around colony)
+  useState(() => {
     for (let q = -2; q <= 2; q++) {
       for (let r = -2; r <= 2; r++) {
         if (Math.abs(q + r) > 2) continue;
-        const tile = tiles.get(`${q},${r}`);
+        const tile = mapTiles.get(
+          `${colonyLocation.q + q},${colonyLocation.r + r}`
+        );
         if (tile) tile.revealed = true;
       }
     }
-    return tiles;
   });
 
   const [state, setState] = useState({
