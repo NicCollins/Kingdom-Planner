@@ -95,12 +95,16 @@ const useGameState = () => {
       type: "info",
     },
   ]);
+  const chronicleRef = useRef<HTMLDivElement>(null);
+  const lastStarvationDay = useRef<number>(-1);
+  const lastFlavorDay = useRef<number>(-1);
 
   const addChronicleEntry = (
+    day: number,
     message: string,
     type: "info" | "warning" | "danger" = "info"
   ) => {
-    setChronicle((prev) => [...prev, { day: state.day, message, type }]);
+    setChronicle((prev) => [...prev, { day, message, type }]);
   };
 
   // Game tick - speed controlled by timeSpeed
@@ -152,22 +156,29 @@ const useGameState = () => {
         // Happiness degradation if starving
         if (newState.grain === 0) {
           newState.happiness = Math.max(0.1, prev.happiness - 0.05);
-          // Add chronicle entry on first starvation
-          if (prev.grain > 0) {
+          // Add chronicle entry on first starvation (only once per starvation event)
+          if (prev.grain > 0 && lastStarvationDay.current !== newState.day) {
+            lastStarvationDay.current = newState.day;
             addChronicleEntry(
+              newState.day,
               "The granaries stand empty. Hungry whispers grow louder in the night.",
               "danger"
             );
           }
         } else if (prev.happiness < 1.0) {
           newState.happiness = Math.min(1.0, prev.happiness + 0.01);
+          // Reset starvation tracking when grain is restored
+          if (prev.grain === 0) {
+            lastStarvationDay.current = -1;
+          }
         }
 
         // Advance time
         newState.day = prev.day + 1;
 
-        // Add occasional flavor text based on happiness
-        if (newState.day % 10 === 0) {
+        // Add occasional flavor text based on happiness (only once per milestone)
+        if (newState.day % 10 === 0 && lastFlavorDay.current !== newState.day) {
+          lastFlavorDay.current = newState.day;
           if (newState.happiness > 0.8) {
             const happyMessages = [
               "The settlers hum work songs as they toil. Morale is high.",
@@ -175,6 +186,7 @@ const useGameState = () => {
               "The evening fires burn bright with laughter and stories.",
             ];
             addChronicleEntry(
+              newState.day,
               happyMessages[Math.floor(Math.random() * happyMessages.length)],
               "info"
             );
@@ -185,6 +197,7 @@ const useGameState = () => {
               "Tension hangs heavy in the air. Something must change.",
             ];
             addChronicleEntry(
+              newState.day,
               unhappyMessages[
                 Math.floor(Math.random() * unhappyMessages.length)
               ],
@@ -228,6 +241,7 @@ const useGameState = () => {
     gameStarted,
     setGameStarted,
     chronicle,
+    chronicleRef,
     mapTiles,
   };
 };
@@ -351,9 +365,17 @@ export default function KingdomPlanner() {
     gameStarted,
     setGameStarted,
     chronicle,
+    chronicleRef,
     mapTiles,
   } = useGameState();
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Auto-scroll chronicle to bottom when new entries are added
+  useEffect(() => {
+    if (chronicleRef.current) {
+      chronicleRef.current.scrollTop = chronicleRef.current.scrollHeight;
+    }
+  }, [chronicle]);
 
   const tabs = ["Dashboard", "Labor", "Map", "Resources"];
 
@@ -876,7 +898,10 @@ export default function KingdomPlanner() {
         {/* Event Log Preview */}
         <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700">
           <h3 className="font-semibold mb-2 text-amber-300">Chronicle</h3>
-          <div className="max-h-32 overflow-y-auto text-sm space-y-1">
+          <div
+            ref={chronicleRef}
+            className="max-h-32 overflow-y-auto text-sm space-y-1"
+          >
             {chronicle.map((entry, idx) => (
               <div
                 key={idx}
