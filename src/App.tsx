@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as PIXI from "pixi.js";
 
+// Time speed options (in milliseconds)
+const TIME_SPEEDS = {
+  paused: 0,
+  slow: 2000, // 1 tick every 2 seconds
+  normal: 1000, // 1 tick every second
+  fast: 500, // 2 ticks per second
+  veryFast: 250, // 4 ticks per second
+} as const;
+
+type TimeSpeed = keyof typeof TIME_SPEEDS;
+
 // Game State Management
 const useGameState = () => {
   const [state, setState] = useState({
@@ -25,8 +36,12 @@ const useGameState = () => {
     revealedTiles: new Set(["0,0"]), // Starting tile
   });
 
-  // Game tick - runs every second
+  const [timeSpeed, setTimeSpeed] = useState<TimeSpeed>("normal");
+
+  // Game tick - speed controlled by timeSpeed
   useEffect(() => {
+    if (timeSpeed === "paused") return;
+
     const tick = setInterval(() => {
       setState((prev) => {
         const newState = { ...prev };
@@ -60,10 +75,10 @@ const useGameState = () => {
 
         return newState;
       });
-    }, 1000);
+    }, TIME_SPEEDS[timeSpeed]);
 
     return () => clearInterval(tick);
-  }, []);
+  }, [timeSpeed]);
 
   const allocateLabor = (job: string, amount: number) => {
     setState((prev) => {
@@ -85,7 +100,7 @@ const useGameState = () => {
     });
   };
 
-  return { state, allocateLabor };
+  return { state, allocateLabor, timeSpeed, setTimeSpeed };
 };
 
 // Simple hex map component using PixiJS
@@ -188,7 +203,7 @@ const HexMap: React.FC<{ revealedTiles: Set<string> }> = ({
 
 // Main App Component
 export default function KingdomPlanner() {
-  const { state, allocateLabor } = useGameState();
+  const { state, allocateLabor, timeSpeed, setTimeSpeed } = useGameState();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const tabs = ["Dashboard", "Labor", "Map", "Resources"];
@@ -201,17 +216,79 @@ export default function KingdomPlanner() {
           <h1 className="text-3xl font-bold text-amber-400 mb-2">
             Kingdom Planner
           </h1>
-          <div className="flex gap-6 text-sm">
-            <div>
-              Day {state.day} - {state.season}
+          <div className="flex justify-between items-center">
+            <div className="flex gap-6 text-sm">
+              <div>
+                Day {state.day} - {state.season}
+              </div>
+              <div>Population: {state.population}</div>
+              <div className={state.grain < 20 ? "text-red-400" : ""}>
+                Grain: {state.grain}
+              </div>
+              <div>Wood: {state.wood}</div>
+              <div>Stone: {state.stone}</div>
+              <div>Happiness: {(state.happiness * 100).toFixed(0)}%</div>
             </div>
-            <div>Population: {state.population}</div>
-            <div className={state.grain < 20 ? "text-red-400" : ""}>
-              Grain: {state.grain}
+
+            {/* Time Controls */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 mr-2">Time:</span>
+              <button
+                onClick={() => setTimeSpeed("paused")}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  timeSpeed === "paused"
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+                title="Pause"
+              >
+                ⏸
+              </button>
+              <button
+                onClick={() => setTimeSpeed("slow")}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  timeSpeed === "slow"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+                title="Slow (2s per day)"
+              >
+                ▶
+              </button>
+              <button
+                onClick={() => setTimeSpeed("normal")}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  timeSpeed === "normal"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+                title="Normal (1s per day)"
+              >
+                ▶▶
+              </button>
+              <button
+                onClick={() => setTimeSpeed("fast")}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  timeSpeed === "fast"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+                title="Fast (2 days per second)"
+              >
+                ▶▶▶
+              </button>
+              <button
+                onClick={() => setTimeSpeed("veryFast")}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  timeSpeed === "veryFast"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+                title="Very Fast (4 days per second)"
+              >
+                ⏩
+              </button>
             </div>
-            <div>Wood: {state.wood}</div>
-            <div>Stone: {state.stone}</div>
-            <div>Happiness: {(state.happiness * 100).toFixed(0)}%</div>
           </div>
         </div>
 
