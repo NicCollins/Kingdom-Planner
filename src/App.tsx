@@ -26,11 +26,25 @@ export default function KingdomPlanner() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [debugMode, setDebugMode] = useState(false);
   const [expeditionWorkers, setExpeditionWorkers] = useState(5);
+  const [selectedTarget, setSelectedTarget] = useState<{
+    q: number;
+    r: number;
+  } | null>(null);
 
-  const handleHexClick = (q: number, r: number) => {
-    const tile = mapTiles.get(`${q},${r}`);
-    if (tile && !tile.revealed && activeTab === "map") {
-      startExpedition(q, r, expeditionWorkers);
+  const handleHexSelect = (q: number, r: number) => {
+    setSelectedTarget({ q, r });
+  };
+
+  const handleSendExpedition = () => {
+    if (selectedTarget) {
+      const success = startExpedition(
+        selectedTarget.q,
+        selectedTarget.r,
+        expeditionWorkers
+      );
+      if (success) {
+        setSelectedTarget(null); // Clear selection after sending
+      }
     }
   };
 
@@ -387,7 +401,8 @@ export default function KingdomPlanner() {
                 <HexMap
                   mapTiles={mapTiles}
                   colonyLocation={colonyLocation}
-                  onHexClick={handleHexClick}
+                  selectedTarget={selectedTarget}
+                  onHexSelect={handleHexSelect}
                 />
               </div>
 
@@ -396,6 +411,13 @@ export default function KingdomPlanner() {
                 <h3 className="font-semibold mb-2 text-amber-200">
                   Launch Expedition
                 </h3>
+
+                {selectedTarget && (
+                  <div className="mb-3 p-2 bg-amber-900/20 border border-amber-700 rounded text-sm">
+                    Target selected: ({selectedTarget.q}, {selectedTarget.r})
+                  </div>
+                )}
+
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <label className="text-sm text-gray-400 block mb-1">
@@ -417,14 +439,24 @@ export default function KingdomPlanner() {
                       className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-gray-600"
                     />
                   </div>
-                  <div className="flex-1 text-sm">
-                    <div className="text-gray-400">
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-400 mb-1">
                       Available Workers: {state.idle}
                     </div>
-                    <div className="text-gray-500 text-xs mt-1">
-                      Click an unexplored hex to send expedition
-                    </div>
+                    <button
+                      onClick={handleSendExpedition}
+                      disabled={
+                        !selectedTarget || state.idle < expeditionWorkers
+                      }
+                      className="w-full px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded transition-colors"
+                    >
+                      Send Expedition
+                    </button>
                   </div>
+                </div>
+
+                <div className="text-xs text-gray-500 mt-2">
+                  Click an unexplored hex to select target, then click Send
                 </div>
 
                 {/* Active Expeditions */}
@@ -504,8 +536,8 @@ export default function KingdomPlanner() {
 
               <div className="mt-4 text-sm text-gray-400">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded border-2 border-orange-500"></div>
-                  <span>Hover over fog to preview expedition target</span>
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <span>Orange crosshair marks selected expedition target</span>
                 </div>
               </div>
             </div>
