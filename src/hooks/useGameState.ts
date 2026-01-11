@@ -4,9 +4,15 @@ import {
   ChronicleEntry,
   TimeSpeed,
   TIME_SPEEDS,
-  HexTile,
+  Expedition,
 } from "../types/game";
 import { generateValidMap } from "../utils/mapGeneration";
+import {
+  hexDistance,
+  calculateExpeditionDuration,
+  revealTilesInRadius,
+  checkExpeditionLoss,
+} from "../utils/expeditionUtils";
 
 export const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -16,7 +22,7 @@ export const useGameState = () => {
   const mapTiles = mapData.tiles;
   const colonyLocation = mapData.colonyLocation;
 
-  // Allow regenerating the map with a specific seed (useful for testing)
+  // Allow regenerating the map with a specific seed
   const regenerateMap = (seed?: number) => {
     setMapData(generateValidMap(seed));
   };
@@ -60,6 +66,8 @@ export const useGameState = () => {
       type: "info",
     },
   ]);
+  const [expeditions, setExpeditions] = useState<Expedition[]>([]);
+
   const chronicleRef = useRef<HTMLDivElement>(null);
   const lastStarvationDay = useRef<number>(-1);
   const lastFlavorDay = useRef<number>(-1);
@@ -70,6 +78,64 @@ export const useGameState = () => {
     type: "info" | "warning" | "danger" = "info"
   ) => {
     setChronicle((prev) => [...prev, { day, message, type }]);
+  };
+
+  // Start an expedition to a target hex
+  const startExpedition = (
+    targetQ: number,
+    targetR: number,
+    workers: number
+  ) => {
+    // Check if we have enough idle workers
+    if (state.idle < workers) {
+      addChronicleEntry(
+        state.day,
+        "Not enough idle workers for expedition!",
+        "warning"
+      );
+      return false;
+    }
+
+    // Check if target is already revealed
+    const targetTile = mapTiles.get(`${targetQ},${targetR}`);
+    if (!targetTile || targetTile.revealed) {
+      return false;
+    }
+
+    // Calculate distance and duration
+    const distance = hexDistance(
+      colonyLocation.q,
+      colonyLocation.r,
+      targetQ,
+      targetR
+    );
+    const duration = calculateExpeditionDuration(distance);
+
+    const newExpedition: Expedition = {
+      id: `exp_${Date.now()}`,
+      targetQ,
+      targetR,
+      workers,
+      startDay: state.day,
+      arrivalDay: state.day + duration,
+      status: "in-progress",
+    };
+
+    setExpeditions((prev) => [...prev, newExpedition]);
+
+    // Remove workers from idle pool
+    setState((prev) => ({
+      ...prev,
+      idle: prev.idle - workers,
+    }));
+
+    addChronicleEntry(
+      state.day,
+      `Expedition of ${workers} settlers departs to explore distant lands. Expected return: Day ${newExpedition.arrivalDay}.`,
+      "info"
+    );
+
+    return true;
   };
 
   // Game tick
@@ -133,6 +199,64 @@ export const useGameState = () => {
         }
 
         newState.day = prev.day + 1;
+
+        // Process expeditions
+        setExpeditions((prevExpeditions) => {
+          const updated = prevExpeditions.map((exp) => {
+            if (
+              exp.status === "in-progress" &&
+              exp.arrivalDay <= newState.day
+            ) {
+              // Check if expedition gets lost
+              const distance = hexDistance(
+                colonyLocation.q,
+                colonyLocation.r,
+                exp.targetQ,
+                exp.targetR
+              );
+
+              if (checkExpeditionLoss(distance)) {
+                addChronicleEntry(
+                  newState.day,
+                  `The expedition to distant lands has gone missing. ${exp.workers} souls lost to the wilderness.`,
+                  "danger"
+                );
+                return { ...exp, status: "lost" as const };
+              } else {
+                // Success! Reveal tiles and return workers
+                revealTilesInRadius(mapTiles, exp.targetQ, exp.targetR, 2);
+                setState((s) => ({ ...s, idle: s.idle + exp.workers }));
+
+                const targetTile = mapTiles.get(
+                  `${exp.targetQ},${exp.targetR}`
+                );
+                const terrainDesc = targetTile
+                  ? targetTile.terrain === "water"
+                    ? "a great water"
+                    : targetTile.terrain === "mountain"
+                    ? "towering peaks"
+                    : targetTile.terrain === "forest"
+                    ? "dense woodlands"
+                    : "fertile fields"
+                  : "unknown lands";
+
+                addChronicleEntry(
+                  newState.day,
+                  `Expedition returns! They discovered ${terrainDesc}. ${exp.workers} settlers rejoin the colony.`,
+                  "info"
+                );
+                return { ...exp, status: "completed" as const };
+              }
+            }
+            return exp;
+          });
+
+          // Remove completed/lost expeditions after 5 days
+          return updated.filter(
+            (exp) =>
+              exp.status === "in-progress" || newState.day - exp.arrivalDay < 5
+          );
+        });
 
         // Flavor text every 10 days
         if (newState.day % 10 === 0 && lastFlavorDay.current !== newState.day) {
@@ -200,5 +324,7 @@ export const useGameState = () => {
     colonyLocation,
     regenerateMap,
     currentSeed: mapData.seed,
+    expeditions,
+    startExpedition,
   };
 };

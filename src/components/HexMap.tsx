@@ -1,20 +1,43 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { HexTile, TerrainType } from "../types/game";
 
 interface HexMapProps {
   mapTiles: Map<string, HexTile>;
   colonyLocation: { q: number; r: number };
+  onHexClick?: (q: number, r: number) => void;
 }
 
-export const HexMap: React.FC<HexMapProps> = ({ mapTiles, colonyLocation }) => {
+export const HexMap: React.FC<HexMapProps> = ({
+  mapTiles,
+  colonyLocation,
+  onHexClick,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
+  const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(
+    null
+  );
 
   useEffect(() => {
     if (!containerRef.current || appRef.current) return;
 
     let mounted = true;
+
+    // Convert pixel coordinates to hex coordinates
+    const pixelToHex = (
+      pixelX: number,
+      pixelY: number,
+      hexSize: number
+    ): { q: number; r: number } => {
+      const x = (pixelX - 300) / (hexSize * Math.sqrt(3));
+      const y = (pixelY - 200) / (hexSize * 1.5);
+
+      const q = Math.round(x - y / 3);
+      const r = Math.round((y * 2) / 3);
+
+      return { q, r };
+    };
 
     const initPixi = async () => {
       const app = new PIXI.Application();
@@ -35,6 +58,31 @@ export const HexMap: React.FC<HexMapProps> = ({ mapTiles, colonyLocation }) => {
 
       const hexSize = 25;
       const graphics = new PIXI.Graphics();
+
+      // Make stage interactive
+      app.stage.eventMode = "static";
+      app.stage.hitArea = app.screen;
+
+      // Add mouse move handler for hover effect
+      app.stage.on("pointermove", (event) => {
+        const pos = event.global;
+        const hex = pixelToHex(pos.x, pos.y, hexSize);
+        const tile = mapTiles.get(`${hex.q},${hex.r}`);
+        if (tile && !tile.revealed) {
+          setHoveredHex(hex);
+        } else {
+          setHoveredHex(null);
+        }
+      });
+
+      // Add click handler
+      app.stage.on("pointerdown", (event) => {
+        if (onHexClick) {
+          const pos = event.global;
+          const hex = pixelToHex(pos.x, pos.y, hexSize);
+          onHexClick(hex.q, hex.r);
+        }
+      });
 
       const terrainColors: Record<TerrainType, number> = {
         field: 0x8b7355,
@@ -89,7 +137,10 @@ export const HexMap: React.FC<HexMapProps> = ({ mapTiles, colonyLocation }) => {
             terrainBorders[tile.terrain]
           );
         } else {
-          drawHex(x, y, hexSize, 0x0a0a0a, 0x333333);
+          // Check if this is the hovered hex
+          const isHovered =
+            hoveredHex && hoveredHex.q === tile.q && hoveredHex.r === tile.r;
+          drawHex(x, y, hexSize, 0x0a0a0a, isHovered ? 0xffaa00 : 0x333333);
         }
       });
 
@@ -121,7 +172,7 @@ export const HexMap: React.FC<HexMapProps> = ({ mapTiles, colonyLocation }) => {
         appRef.current = null;
       }
     };
-  }, [mapTiles, colonyLocation]);
+  }, [mapTiles, colonyLocation, hoveredHex, onHexClick]);
 
   return <div ref={containerRef} className="border border-gray-700 rounded" />;
 };

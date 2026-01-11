@@ -19,10 +19,20 @@ export default function KingdomPlanner() {
     colonyLocation,
     regenerateMap,
     currentSeed,
+    expeditions,
+    startExpedition,
   } = useGameState();
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [debugMode, setDebugMode] = useState(false);
+  const [expeditionWorkers, setExpeditionWorkers] = useState(5);
+
+  const handleHexClick = (q: number, r: number) => {
+    const tile = mapTiles.get(`${q},${r}`);
+    if (tile && !tile.revealed && activeTab === "map") {
+      startExpedition(q, r, expeditionWorkers);
+    }
+  };
 
   // Auto-scroll chronicle to bottom
   useEffect(() => {
@@ -374,7 +384,75 @@ export default function KingdomPlanner() {
               </div>
 
               <div className="flex justify-center">
-                <HexMap mapTiles={mapTiles} colonyLocation={colonyLocation} />
+                <HexMap
+                  mapTiles={mapTiles}
+                  colonyLocation={colonyLocation}
+                  onHexClick={handleHexClick}
+                />
+              </div>
+
+              {/* Expedition Controls */}
+              <div className="mt-4 bg-gray-900 p-4 rounded border border-gray-700">
+                <h3 className="font-semibold mb-2 text-amber-200">
+                  Launch Expedition
+                </h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="text-sm text-gray-400 block mb-1">
+                      Expedition Size
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={state.idle}
+                      value={expeditionWorkers}
+                      onChange={(e) =>
+                        setExpeditionWorkers(
+                          Math.min(
+                            state.idle,
+                            Math.max(1, parseInt(e.target.value) || 1)
+                          )
+                        )
+                      }
+                      className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-gray-600"
+                    />
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <div className="text-gray-400">
+                      Available Workers: {state.idle}
+                    </div>
+                    <div className="text-gray-500 text-xs mt-1">
+                      Click an unexplored hex to send expedition
+                    </div>
+                  </div>
+                </div>
+
+                {/* Active Expeditions */}
+                {expeditions.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <div className="text-sm text-gray-400 mb-2">
+                      Active Expeditions:
+                    </div>
+                    <div className="space-y-1">
+                      {expeditions
+                        .filter((exp) => exp.status === "in-progress")
+                        .map((exp) => (
+                          <div
+                            key={exp.id}
+                            className="text-xs text-gray-300 flex justify-between"
+                          >
+                            <span>
+                              {exp.workers} workers → ({exp.targetQ},{" "}
+                              {exp.targetR})
+                            </span>
+                            <span className="text-amber-400">
+                              Returns Day {exp.arrivalDay}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Terrain statistics */}
@@ -424,8 +502,11 @@ export default function KingdomPlanner() {
                 })()}
               </div>
 
-              <div className="mt-4 text-sm text-gray-400 text-center">
-                Expedition system coming soon...
+              <div className="mt-4 text-sm text-gray-400">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded border-2 border-orange-500"></div>
+                  <span>Hover over fog to preview expedition target</span>
+                </div>
               </div>
             </div>
           )}

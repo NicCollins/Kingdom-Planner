@@ -33,6 +33,16 @@ export interface ChronicleEntry {
   type: "info" | "warning" | "danger";
 }
 
+export interface Expedition {
+  id: string;
+  targetQ: number;
+  targetR: number;
+  workers: number;
+  startDay: number;
+  arrivalDay: number;
+  status: "in-progress" | "completed" | "lost";
+}
+
 export const TIME_SPEEDS = {
   paused: 0,
   slow: 2000,
