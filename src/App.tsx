@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ColonyCharter } from "./components/ColonyCharter";
 import { HexMap } from "./components/HexMap";
+import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
 import { TIME_SPEEDS } from "./types/game";
 
@@ -16,9 +17,12 @@ export default function KingdomPlanner() {
     chronicleRef,
     mapTiles,
     colonyLocation,
+    regenerateMap,
+    currentSeed,
   } = useGameState();
 
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [debugMode, setDebugMode] = useState(false);
 
   // Auto-scroll chronicle to bottom
   useEffect(() => {
@@ -26,6 +30,23 @@ export default function KingdomPlanner() {
       chronicleRef.current.scrollTop = chronicleRef.current.scrollHeight;
     }
   }, [chronicle, chronicleRef]);
+
+  // Keyboard shortcut for debug mode (D key)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "d" || e.key === "D") {
+        if (
+          !(e.target instanceof HTMLInputElement) &&
+          !(e.target instanceof HTMLTextAreaElement)
+        ) {
+          setDebugMode((prev) => !prev);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
 
   const tabs = ["Dashboard", "Labor", "Map", "Resources"];
 
@@ -36,6 +57,30 @@ export default function KingdomPlanner() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4">
+      {/* Debug Toggle - Always visible */}
+      <button
+        onClick={() => setDebugMode(!debugMode)}
+        className="fixed top-4 right-4 z-50 px-3 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-xs font-mono transition-colors"
+        title="Toggle Debug Mode (D)"
+      >
+        {debugMode ? "🐛 ON" : "🐛 OFF"}
+      </button>
+
+      {/* Debug Panel */}
+      {debugMode && (
+        <DebugPanel
+          state={state}
+          timeSpeed={timeSpeed}
+          gameStarted={gameStarted}
+          chronicle={chronicle}
+          mapTiles={mapTiles}
+          colonyLocation={colonyLocation}
+          onClose={() => setDebugMode(false)}
+          regenerateMap={regenerateMap}
+          currentSeed={currentSeed}
+        />
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-gray-800 rounded-lg p-6 mb-4 border border-gray-700">

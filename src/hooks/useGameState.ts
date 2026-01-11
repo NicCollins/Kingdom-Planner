@@ -12,12 +12,17 @@ export const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
 
   // Generate a validated map with proper ratios
-  const [mapData] = useState(() => generateValidMap());
+  const [mapData, setMapData] = useState(() => generateValidMap());
   const mapTiles = mapData.tiles;
   const colonyLocation = mapData.colonyLocation;
 
-  // Reveal starting area (3-tile radius around colony)
-  useState(() => {
+  // Allow regenerating the map with a specific seed (useful for testing)
+  const regenerateMap = (seed?: number) => {
+    setMapData(generateValidMap(seed));
+  };
+
+  // Reveal starting area (3-tile radius around colony) - runs whenever map changes
+  useEffect(() => {
     for (let q = -2; q <= 2; q++) {
       for (let r = -2; r <= 2; r++) {
         if (Math.abs(q + r) > 2) continue;
@@ -27,7 +32,7 @@ export const useGameState = () => {
         if (tile) tile.revealed = true;
       }
     }
-  });
+  }, [mapData, mapTiles, colonyLocation]);
 
   const [state, setState] = useState<GameState>({
     population: 50,
@@ -193,5 +198,7 @@ export const useGameState = () => {
     chronicleRef,
     mapTiles,
     colonyLocation,
+    regenerateMap,
+    currentSeed: mapData.seed,
   };
 };
