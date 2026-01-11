@@ -21,6 +21,7 @@ export default function KingdomPlanner() {
     currentSeed,
     expeditions,
     startExpedition,
+    mapRevealCounter,
   } = useGameState();
 
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -403,6 +404,7 @@ export default function KingdomPlanner() {
                   colonyLocation={colonyLocation}
                   selectedTarget={selectedTarget}
                   onHexSelect={handleHexSelect}
+                  mapRevealCounter={mapRevealCounter}
                 />
               </div>
 

@@ -7,6 +7,7 @@ interface HexMapProps {
   colonyLocation: { q: number; r: number };
   selectedTarget: { q: number; r: number } | null;
   onHexSelect?: (q: number, r: number) => void;
+  mapRevealCounter?: number;
 }
 
 export const HexMap: React.FC<HexMapProps> = ({
@@ -14,6 +15,7 @@ export const HexMap: React.FC<HexMapProps> = ({
   colonyLocation,
   selectedTarget,
   onHexSelect,
+  mapRevealCounter = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
@@ -337,7 +339,13 @@ export const HexMap: React.FC<HexMapProps> = ({
       graphics.drawCircle(colonyX, colonyY, 4);
       graphics.endFill();
     }
-  }, [selectedTarget, shouldRedraw, colonyLocation, pixiInitialized]);
+  }, [
+    selectedTarget,
+    shouldRedraw,
+    colonyLocation,
+    pixiInitialized,
+    mapRevealCounter,
+  ]);
 
   return <div ref={containerRef} className="border border-gray-700 rounded" />;
 };

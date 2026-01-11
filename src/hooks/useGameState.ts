@@ -10,7 +10,7 @@ import { generateValidMap } from "../utils/mapGeneration";
 import {
   hexDistance,
   calculateExpeditionDuration,
-  revealTilesInRadius,
+  revealExpeditionArea,
   checkExpeditionLoss,
 } from "../utils/expeditionUtils";
 
@@ -67,6 +67,7 @@ export const useGameState = () => {
     },
   ]);
   const [expeditions, setExpeditions] = useState<Expedition[]>([]);
+  const [mapRevealCounter, setMapRevealCounter] = useState(0);
 
   const chronicleRef = useRef<HTMLDivElement>(null);
   const lastStarvationDay = useRef<number>(-1);
@@ -223,28 +224,41 @@ export const useGameState = () => {
                 );
                 return { ...exp, status: "lost" as const };
               } else {
-                // Success! Reveal tiles and return workers
-                revealTilesInRadius(mapTiles, exp.targetQ, exp.targetR, 2);
-                setState((s) => ({ ...s, idle: s.idle + exp.workers }));
+                // Only process if not already completed (prevent double-run in dev mode)
+                if (exp.status === "in-progress") {
+                  // Success! Reveal path and area around destination
+                  const revealedCount = revealExpeditionArea(
+                    mapTiles,
+                    colonyLocation.q,
+                    colonyLocation.r,
+                    exp.targetQ,
+                    exp.targetR
+                  );
 
-                const targetTile = mapTiles.get(
-                  `${exp.targetQ},${exp.targetR}`
-                );
-                const terrainDesc = targetTile
-                  ? targetTile.terrain === "water"
-                    ? "a great water"
-                    : targetTile.terrain === "mountain"
-                    ? "towering peaks"
-                    : targetTile.terrain === "forest"
-                    ? "dense woodlands"
-                    : "fertile fields"
-                  : "unknown lands";
+                  // Trigger map redraw
+                  setMapRevealCounter((prev) => prev + 1);
 
-                addChronicleEntry(
-                  newState.day,
-                  `Expedition returns! They discovered ${terrainDesc}. ${exp.workers} settlers rejoin the colony.`,
-                  "info"
-                );
+                  setState((s) => ({ ...s, idle: s.idle + exp.workers }));
+
+                  const targetTile = mapTiles.get(
+                    `${exp.targetQ},${exp.targetR}`
+                  );
+                  const terrainDesc = targetTile
+                    ? targetTile.terrain === "water"
+                      ? "a great water"
+                      : targetTile.terrain === "mountain"
+                      ? "towering peaks"
+                      : targetTile.terrain === "forest"
+                      ? "dense woodlands"
+                      : "fertile fields"
+                    : "unknown lands";
+
+                  addChronicleEntry(
+                    newState.day,
+                    `Expedition returns! They discovered ${terrainDesc} and mapped their journey, revealing ${revealedCount} hexes. ${exp.workers} settlers rejoin the colony.`,
+                    "info"
+                  );
+                }
                 return { ...exp, status: "completed" as const };
               }
             }
@@ -291,7 +305,7 @@ export const useGameState = () => {
     }, TIME_SPEEDS[timeSpeed]);
 
     return () => clearInterval(tick);
-  }, [timeSpeed, gameStarted, mapTiles]);
+  }, [timeSpeed, gameStarted, mapTiles, colonyLocation]);
 
   const allocateLabor = (job: string, amount: number) => {
     setState((prev) => {
@@ -326,5 +340,6 @@ export const useGameState = () => {
     currentSeed: mapData.seed,
     expeditions,
     startExpedition,
+    mapRevealCounter,
   };
 };
