@@ -1,3 +1,5 @@
+// src/hooks/useGameState.ts - Updated with new resource system
+
 import { useState, useEffect, useRef } from "react";
 import {
   GameState,
@@ -5,6 +7,7 @@ import {
   TimeSpeed,
   TIME_SPEEDS,
   Expedition,
+  calculateTotalFood,
 } from "../types/game";
 import { generateValidMap } from "../utils/mapGeneration";
 import {
@@ -17,17 +20,14 @@ import {
 export const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
 
-  // Generate a validated map with proper ratios
   const [mapData, setMapData] = useState(() => generateValidMap());
   const mapTiles = mapData.tiles;
   const colonyLocation = mapData.colonyLocation;
 
-  // Allow regenerating the map with a specific seed
   const regenerateMap = (seed?: number) => {
     setMapData(generateValidMap(seed));
   };
 
-  // Reveal starting area (3-tile radius around colony) - runs whenever map changes
   useEffect(() => {
     for (let q = -2; q <= 2; q++) {
       for (let r = -2; r <= 2; r++) {
@@ -42,16 +42,32 @@ export const useGameState = () => {
 
   const [state, setState] = useState<GameState>({
     population: 50,
-    grain: 100,
-    wood: 50,
-    stone: 20,
+
+    // Food resources - starting provisions
+    rations: 100,
+    berries: 0,
+    smallGame: 0,
+    largeGame: 0,
+    grain: 20,
+
+    // Wood resources
+    sticks: 50,
+    logs: 20,
+
+    // Stone resources
+    rocks: 30,
+    stone: 10,
+
     tools: 5,
     happiness: 1.0,
 
-    farmers: 10,
+    // Labor - starting allocation
+    gatherers: 15,
+    hunters: 5,
+    farmers: 0,
     woodcutters: 5,
-    gatherers: 3,
-    idle: 32,
+    stoneWorkers: 3,
+    idle: 22,
 
     day: 1,
     season: "Spring",
@@ -62,7 +78,7 @@ export const useGameState = () => {
     {
       day: 1,
       message:
-        "Your expedition has arrived at the new world. The air is thick with possibility and danger.",
+        "Your expedition has arrived. The land offers both bounty and challenge.",
       type: "info",
     },
   ]);
@@ -81,13 +97,11 @@ export const useGameState = () => {
     setChronicle((prev) => [...prev, { day, message, type }]);
   };
 
-  // Start an expedition to a target hex
   const startExpedition = (
     targetQ: number,
     targetR: number,
     workers: number
   ) => {
-    // Check if we have enough idle workers
     if (state.idle < workers) {
       addChronicleEntry(
         state.day,
@@ -97,13 +111,11 @@ export const useGameState = () => {
       return false;
     }
 
-    // Check if target is already revealed
     const targetTile = mapTiles.get(`${targetQ},${targetR}`);
     if (!targetTile || targetTile.revealed) {
       return false;
     }
 
-    // Calculate distance and duration
     const distance = hexDistance(
       colonyLocation.q,
       colonyLocation.r,
@@ -124,7 +136,6 @@ export const useGameState = () => {
 
     setExpeditions((prev) => [...prev, newExpedition]);
 
-    // Remove workers from idle pool
     setState((prev) => ({
       ...prev,
       idle: prev.idle - workers,
@@ -147,7 +158,7 @@ export const useGameState = () => {
       setState((prev) => {
         const newState = { ...prev };
 
-        // Calculate terrain bonuses
+        // Count available terrain
         let fieldCount = 0,
           forestCount = 0,
           mountainCount = 0;
@@ -159,43 +170,112 @@ export const useGameState = () => {
           }
         });
 
-        const fieldMultiplier = Math.min(1.0, fieldCount / 10);
-        const forestMultiplier = Math.min(1.0, forestCount / 5);
-        const mountainMultiplier = Math.min(1.0, mountainCount / 3);
+        // Production multipliers based on terrain
+        const fieldMult = Math.min(1.0, fieldCount / 10);
+        const forestMult = Math.min(1.0, forestCount / 5);
+        const mountainMult = Math.min(1.0, mountainCount / 3);
 
-        const grainProduced = Math.floor(
-          prev.farmers * 0.5 * prev.happiness * fieldMultiplier
+        // GATHERERS: berries, sticks, rocks (fields & forests)
+        const gatherTerrainMult = Math.min(
+          1.0,
+          (fieldCount + forestCount) / 15
         );
-        const woodProduced = Math.floor(
-          Math.min(prev.woodcutters, prev.tools) * 0.3 * forestMultiplier
+        const berriesGathered = Math.floor(
+          prev.gatherers * 0.3 * gatherTerrainMult * prev.happiness
         );
-        const stoneProduced = Math.floor(
-          prev.gatherers * 0.2 * mountainMultiplier
+        const sticksGathered = Math.floor(
+          prev.gatherers * 0.4 * gatherTerrainMult * prev.happiness
         );
-        const grainConsumed = Math.floor(prev.population * 0.1);
+        const rocksGathered = Math.floor(
+          prev.gatherers * 0.2 * gatherTerrainMult * prev.happiness
+        );
 
-        newState.grain = Math.max(
-          0,
-          prev.grain + grainProduced - grainConsumed
+        // HUNTERS: small game (fields & forests), large game (forests only)
+        const huntFieldMult = Math.min(1.0, (fieldCount + forestCount) / 12);
+        const huntForestMult = Math.min(1.0, forestCount / 5);
+        const smallGameHunted = Math.floor(
+          prev.hunters * 0.4 * huntFieldMult * prev.happiness
         );
-        newState.wood = prev.wood + woodProduced;
-        newState.stone = prev.stone + stoneProduced;
+        const largeGameHunted = Math.floor(
+          prev.hunters * 0.2 * huntForestMult * prev.happiness
+        );
 
-        // Happiness
-        if (newState.grain === 0) {
+        // WOODCUTTERS: logs (forests only, tool-limited)
+        const logsChopped = Math.floor(
+          Math.min(prev.woodcutters, prev.tools) * 0.3 * forestMult
+        );
+
+        // STONE WORKERS: stone (mountains only)
+        const stoneMined = Math.floor(prev.stoneWorkers * 0.2 * mountainMult);
+
+        // Update resources
+        newState.berries = prev.berries + berriesGathered;
+        newState.smallGame = prev.smallGame + smallGameHunted;
+        newState.largeGame = prev.largeGame + largeGameHunted;
+        newState.sticks = prev.sticks + sticksGathered;
+        newState.logs = prev.logs + logsChopped;
+        newState.rocks = prev.rocks + rocksGathered;
+        newState.stone = prev.stone + stoneMined;
+
+        // Food consumption
+        const foodNeeded = prev.population * 0.1;
+        const totalFood = calculateTotalFood(prev);
+
+        if (totalFood >= foodNeeded) {
+          let remaining = foodNeeded;
+
+          // Consume in priority order: berries -> rations -> small game -> large game
+          const berriesNeeded = Math.min(
+            newState.berries,
+            Math.ceil(remaining / 0.3)
+          );
+          newState.berries = Math.max(0, newState.berries - berriesNeeded);
+          remaining -= berriesNeeded * 0.3;
+
+          if (remaining > 0) {
+            const rationsNeeded = Math.min(
+              newState.rations,
+              Math.ceil(remaining / 1.0)
+            );
+            newState.rations = Math.max(0, newState.rations - rationsNeeded);
+            remaining -= rationsNeeded * 1.0;
+          }
+
+          if (remaining > 0) {
+            const smallGameNeeded = Math.min(
+              newState.smallGame,
+              Math.ceil(remaining / 0.8)
+            );
+            newState.smallGame = Math.max(
+              0,
+              newState.smallGame - smallGameNeeded
+            );
+            remaining -= smallGameNeeded * 0.8;
+          }
+
+          if (remaining > 0) {
+            const largeGameNeeded = Math.min(
+              newState.largeGame,
+              Math.ceil(remaining / 2.0)
+            );
+            newState.largeGame = Math.max(
+              0,
+              newState.largeGame - largeGameNeeded
+            );
+          }
+
+          if (prev.happiness < 1.0) {
+            newState.happiness = Math.min(1.0, prev.happiness + 0.01);
+          }
+        } else {
           newState.happiness = Math.max(0.1, prev.happiness - 0.05);
-          if (prev.grain > 0 && lastStarvationDay.current !== newState.day) {
+          if (lastStarvationDay.current !== newState.day) {
             lastStarvationDay.current = newState.day;
             addChronicleEntry(
               newState.day,
-              "The granaries stand empty. Hungry whispers grow louder in the night.",
+              "Food supplies depleted. The colony goes hungry.",
               "danger"
             );
-          }
-        } else if (prev.happiness < 1.0) {
-          newState.happiness = Math.min(1.0, prev.happiness + 0.01);
-          if (prev.grain === 0) {
-            lastStarvationDay.current = -1;
           }
         }
 
@@ -208,7 +288,6 @@ export const useGameState = () => {
               exp.status === "in-progress" &&
               exp.arrivalDay <= newState.day
             ) {
-              // Check if expedition gets lost
               const distance = hexDistance(
                 colonyLocation.q,
                 colonyLocation.r,
@@ -224,9 +303,7 @@ export const useGameState = () => {
                 );
                 return { ...exp, status: "lost" as const };
               } else {
-                // Only process if not already completed (prevent double-run in dev mode)
                 if (exp.status === "in-progress") {
-                  // Success! Reveal path and area around destination
                   const revealedCount = revealExpeditionArea(
                     mapTiles,
                     colonyLocation.q,
@@ -235,9 +312,7 @@ export const useGameState = () => {
                     exp.targetR
                   );
 
-                  // Trigger map redraw
                   setMapRevealCounter((prev) => prev + 1);
-
                   setState((s) => ({ ...s, idle: s.idle + exp.workers }));
 
                   const targetTile = mapTiles.get(
@@ -265,7 +340,6 @@ export const useGameState = () => {
             return exp;
           });
 
-          // Remove completed/lost expeditions after 5 days
           return updated.filter(
             (exp) =>
               exp.status === "in-progress" || newState.day - exp.arrivalDay < 5
@@ -310,7 +384,12 @@ export const useGameState = () => {
   const allocateLabor = (job: string, amount: number) => {
     setState((prev) => {
       const total =
-        prev.farmers + prev.woodcutters + prev.gatherers + prev.idle;
+        prev.gatherers +
+        prev.hunters +
+        prev.farmers +
+        prev.woodcutters +
+        prev.stoneWorkers +
+        prev.idle;
       if (total !== prev.population) return prev;
 
       const newState = {
@@ -319,7 +398,11 @@ export const useGameState = () => {
       };
       newState.idle =
         prev.population -
-        (newState.farmers + newState.woodcutters + newState.gatherers);
+        (newState.gatherers +
+          newState.hunters +
+          newState.farmers +
+          newState.woodcutters +
+          newState.stoneWorkers);
 
       return newState;
     });

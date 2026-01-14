@@ -1,4 +1,3 @@
-// Terrain types
 export type TerrainType = "field" | "forest" | "mountain" | "water";
 
 export interface HexTile {
@@ -10,16 +9,31 @@ export interface HexTile {
 
 export interface GameState {
   population: number;
+
+  // Food resources
+  rations: number;
+  berries: number;
+  smallGame: number;
+  largeGame: number;
   grain: number;
-  wood: number;
+
+  // Wood resources
+  sticks: number;
+  logs: number;
+
+  // Stone resources
+  rocks: number;
   stone: number;
+
   tools: number;
   happiness: number;
 
   // Labor allocation
+  gatherers: number;
+  hunters: number;
   farmers: number;
   woodcutters: number;
-  gatherers: number;
+  stoneWorkers: number;
   idle: number;
 
   // Time
@@ -52,3 +66,22 @@ export const TIME_SPEEDS = {
 } as const;
 
 export type TimeSpeed = keyof typeof TIME_SPEEDS;
+
+// Helper functions for aggregated resources
+export const calculateTotalFood = (state: GameState): number => {
+  return Math.floor(
+    state.rations * 1.0 +
+      state.berries * 0.3 +
+      state.smallGame * 0.8 +
+      state.largeGame * 2.0 +
+      state.grain * 0.5
+  );
+};
+
+export const calculateFirewood = (state: GameState): number => {
+  return state.sticks;
+};
+
+export const calculateStores = (state: GameState): number => {
+  return state.grain + state.logs + state.rocks + state.stone;
+};

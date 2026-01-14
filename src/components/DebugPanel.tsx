@@ -5,6 +5,7 @@ import {
   ChronicleEntry,
   TimeSpeed,
   TIME_SPEEDS,
+  calculateTotalFood,
 } from "../types/game";
 
 interface DebugPanelProps {
@@ -102,15 +103,29 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
 
         {/* Resources */}
         <div>
-          <div className="text-amber-300 font-semibold mb-1">Resources</div>
+          <div className="text-amber-300 font-semibold mb-1">
+            Food Resources
+          </div>
           <div className="text-gray-300 space-y-0.5">
+            <div>Rations: {state.rations}</div>
+            <div>Berries: {state.berries}</div>
+            <div>Small Game: {state.smallGame}</div>
+            <div>Large Game: {state.largeGame}</div>
             <div>Grain: {state.grain}</div>
-            <div>Wood: {state.wood}</div>
+            <div className="text-yellow-400">
+              Total Food: {calculateTotalFood(state)}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-amber-300 font-semibold mb-1">Materials</div>
+          <div className="text-gray-300 space-y-0.5">
+            <div>Sticks: {state.sticks}</div>
+            <div>Logs: {state.logs}</div>
+            <div>Rocks: {state.rocks}</div>
             <div>Stone: {state.stone}</div>
             <div>Tools: {state.tools}</div>
-            <div className="text-yellow-400">
-              Happiness: {(state.happiness * 100).toFixed(1)}%
-            </div>
           </div>
         </div>
 
@@ -121,14 +136,18 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
           </div>
           <div className="text-gray-300 space-y-0.5">
             <div>Population: {state.population}</div>
-            <div>Farmers: {state.farmers}</div>
-            <div>Woodcutters: {state.woodcutters}</div>
             <div>Gatherers: {state.gatherers}</div>
+            <div>Hunters: {state.hunters}</div>
+            <div>Woodcutters: {state.woodcutters}</div>
+            <div>Stone Workers: {state.stoneWorkers}</div>
+            <div>Farmers: {state.farmers}</div>
             <div>Idle: {state.idle}</div>
             <div className="text-red-400">
-              {state.farmers +
+              {state.gatherers +
+                state.hunters +
                 state.woodcutters +
-                state.gatherers +
+                state.stoneWorkers +
+                state.farmers +
                 state.idle !==
                 state.population && "⚠️ Labor mismatch!"}
             </div>
@@ -141,36 +160,97 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
             Production Rates
           </div>
           <div className="text-gray-300 space-y-0.5">
-            <div>
-              Grain:{" "}
-              {Math.floor(state.farmers * 0.5 * state.happiness * fieldMult)}
-              /day
-              <span className="text-gray-500">
-                {" "}
-                (×{(fieldMult * 100).toFixed(0)}%)
-              </span>
-            </div>
-            <div>
-              Wood:{" "}
-              {Math.floor(
-                Math.min(state.woodcutters, state.tools) * 0.3 * forestMult
-              )}
-              /day
-              <span className="text-gray-500">
-                {" "}
-                (×{(forestMult * 100).toFixed(0)}%)
-              </span>
-            </div>
-            <div>
-              Stone: {Math.floor(state.gatherers * 0.2 * mountainMult)}/day
-              <span className="text-gray-500">
-                {" "}
-                (×{(mountainMult * 100).toFixed(0)}%)
-              </span>
-            </div>
-            <div className="text-red-400">
-              Consumption: {Math.floor(state.population * 0.1)}/day
-            </div>
+            {(() => {
+              let fieldCount = 0,
+                forestCount = 0,
+                mountainCount = 0;
+              mapTiles.forEach((tile) => {
+                if (tile.revealed) {
+                  if (tile.terrain === "field") fieldCount++;
+                  if (tile.terrain === "forest") forestCount++;
+                  if (tile.terrain === "mountain") mountainCount++;
+                }
+              });
+              const gatherTerrainMult = Math.min(
+                1.0,
+                (fieldCount + forestCount) / 15
+              );
+              const huntFieldMult = Math.min(
+                1.0,
+                (fieldCount + forestCount) / 12
+              );
+              const huntForestMult = Math.min(1.0, forestCount / 5);
+              const forestMult = Math.min(1.0, forestCount / 5);
+              const mountainMult = Math.min(1.0, mountainCount / 3);
+
+              return (
+                <>
+                  <div>
+                    Berries:{" "}
+                    {Math.floor(
+                      state.gatherers *
+                        0.3 *
+                        gatherTerrainMult *
+                        state.happiness
+                    )}
+                    /day
+                  </div>
+                  <div>
+                    Sticks:{" "}
+                    {Math.floor(
+                      state.gatherers *
+                        0.4 *
+                        gatherTerrainMult *
+                        state.happiness
+                    )}
+                    /day
+                  </div>
+                  <div>
+                    Rocks:{" "}
+                    {Math.floor(
+                      state.gatherers *
+                        0.2 *
+                        gatherTerrainMult *
+                        state.happiness
+                    )}
+                    /day
+                  </div>
+                  <div>
+                    Small Game:{" "}
+                    {Math.floor(
+                      state.hunters * 0.4 * huntFieldMult * state.happiness
+                    )}
+                    /day
+                  </div>
+                  <div>
+                    Large Game:{" "}
+                    {Math.floor(
+                      state.hunters * 0.2 * huntForestMult * state.happiness
+                    )}
+                    /day
+                  </div>
+                  <div>
+                    Logs:{" "}
+                    {Math.floor(
+                      Math.min(state.woodcutters, state.tools) *
+                        0.3 *
+                        forestMult
+                    )}
+                    /day
+                    {state.woodcutters > state.tools && (
+                      <span className="text-yellow-400"> (tool-limited)</span>
+                    )}
+                  </div>
+                  <div>
+                    Stone: {Math.floor(state.stoneWorkers * 0.2 * mountainMult)}
+                    /day
+                  </div>
+                  <div className="text-red-400">
+                    Food consumed: {(state.population * 0.1).toFixed(1)}/day
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 

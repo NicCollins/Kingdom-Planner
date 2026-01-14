@@ -34,28 +34,39 @@ export const ColonyCharter: React.FC<ColonyCharterProps> = ({ onStart }) => {
               hardy, willing to carve civilization from wilderness
             </li>
             <li>
+              • <span className="text-amber-200">One hundred rations</span>,
+              preserved meats and hardtack for your first days
+            </li>
+            <li>
               •{" "}
-              <span className="text-amber-200">One hundred sacks of grain</span>
-              , seed and sustenance for your first season
+              <span className="text-amber-200">
+                Fifty sticks and twenty logs
+              </span>
+              , for shelter and warmth
             </li>
             <li>
-              • <span className="text-amber-200">Fifty logs of timber</span>,
-              for shelter and warmth
-            </li>
-            <li>
-              • <span className="text-amber-200">Twenty stones</span>,
-              foundation for your future
+              •{" "}
+              <span className="text-amber-200">
+                Thirty rocks and ten stones
+              </span>
+              , foundation for your future
             </li>
             <li>
               • <span className="text-amber-200">Five iron tools</span>, axes
               and implements for labor
             </li>
+            <li>
+              • <span className="text-amber-200">Twenty sacks of grain</span>,
+              saved for future planting
+            </li>
           </ul>
 
           <p>
             You arrive in <span className="text-amber-200">mid-Spring</span>,
-            when the earth softens and the planting season beckons. Use your
-            time wisely, for winter comes swiftly in these lands.
+            when the earth softens and game is plentiful. Your gatherers can
+            forage berries and collect materials, while hunters pursue game in
+            the forests. Use your time wisely, for winter comes swiftly in these
+            lands.
           </p>
 
           <p className="text-gray-400 italic text-sm">

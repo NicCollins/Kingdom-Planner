@@ -3,7 +3,12 @@ import { ColonyCharter } from "./components/ColonyCharter";
 import { HexMap } from "./components/HexMap";
 import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
-import { TIME_SPEEDS } from "./types/game";
+import {
+  calculateTotalFood,
+  calculateFirewood,
+  calculateStores,
+  TIME_SPEEDS,
+} from "./types/game";
 
 export default function KingdomPlanner() {
   const {
@@ -23,6 +28,10 @@ export default function KingdomPlanner() {
     startExpedition,
     mapRevealCounter,
   } = useGameState();
+
+  const totalFood = calculateTotalFood(state);
+  const firewood = calculateFirewood(state);
+  const stores = calculateStores(state);
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [debugMode, setDebugMode] = useState(false);
@@ -118,11 +127,12 @@ export default function KingdomPlanner() {
                 Day {state.day} - {state.season}
               </div>
               <div>Population: {state.population}</div>
-              <div className={state.grain < 20 ? "text-red-400" : ""}>
-                Grain: {state.grain}
+              <div className={totalFood < 20 ? "text-red-400" : ""}>
+                Food: {totalFood}
               </div>
-              <div>Wood: {state.wood}</div>
-              <div>Stone: {state.stone}</div>
+              <div>Firewood: {firewood}</div>
+              <div>Tools: {state.tools}</div>
+              <div>Stores: {stores}</div>
             </div>
 
             {/* Time Controls */}
@@ -184,84 +194,87 @@ export default function KingdomPlanner() {
               </h2>
               <div className="space-y-3">
                 <p className="text-gray-300">
-                  Your fledgling colony has survived {state.day} days in this
-                  new land.
+                  Day {state.day} of colonization. Your people work the land and
+                  hunt the forests.
                 </p>
-                <div className="bg-gray-900 p-4 rounded border border-gray-700">
-                  <h3 className="font-semibold mb-2 text-amber-200">
-                    Daily Production
-                  </h3>
-                  <div className="text-sm space-y-1">
-                    {(() => {
-                      let fields = 0,
-                        forests = 0,
-                        mountains = 0;
-                      mapTiles.forEach((tile) => {
-                        if (tile.revealed) {
-                          if (tile.terrain === "field") fields++;
-                          if (tile.terrain === "forest") forests++;
-                          if (tile.terrain === "mountain") mountains++;
-                        }
-                      });
-                      const fieldMult = Math.min(1.0, fields / 10);
-                      const forestMult = Math.min(1.0, forests / 5);
-                      const mountainMult = Math.min(1.0, mountains / 3);
 
-                      return (
-                        <>
-                          <div>
-                            Grain: +
-                            {Math.floor(
-                              state.farmers * 0.5 * state.happiness * fieldMult
-                            )}{" "}
-                            / day
-                            {fieldMult < 1.0 && (
-                              <span className="text-yellow-400">
-                                {" "}
-                                (Limited by available fields)
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            Wood: +
-                            {Math.floor(
-                              Math.min(state.woodcutters, state.tools) *
-                                0.3 *
-                                forestMult
-                            )}{" "}
-                            / day
-                            {forestMult < 1.0 && (
-                              <span className="text-yellow-400">
-                                {" "}
-                                (Limited by forests)
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            Stone: +
-                            {Math.floor(state.gatherers * 0.2 * mountainMult)} /
-                            day
-                            {mountainMult < 1.0 && (
-                              <span className="text-yellow-400">
-                                {" "}
-                                (Limited by mountains)
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Food breakdown */}
+                  <div className="bg-gray-900 p-4 rounded border border-gray-700">
+                    <h3 className="font-semibold mb-2 text-amber-200">
+                      Food Supplies
+                    </h3>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Rations:</span>
+                        <span>{state.rations}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Berries:</span>
+                        <span>{state.berries}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Small Game:</span>
+                        <span>{state.smallGame}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Large Game:</span>
+                        <span>{state.largeGame}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Grain:</span>
+                        <span>{state.grain}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-700 flex justify-between font-bold">
+                        <span>Total Food Value:</span>
+                        <span
+                          className={
+                            totalFood < 20 ? "text-red-400" : "text-green-400"
+                          }
+                        >
+                          {totalFood}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Daily consumption: {(state.population * 0.1).toFixed(1)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Materials breakdown */}
+                  <div className="bg-gray-900 p-4 rounded border border-gray-700">
+                    <h3 className="font-semibold mb-2 text-amber-200">
+                      Materials
+                    </h3>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Sticks:</span>
+                        <span>{state.sticks}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Logs:</span>
+                        <span>{state.logs}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Rocks:</span>
+                        <span>{state.rocks}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Stone:</span>
+                        <span>{state.stone}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-700 flex justify-between font-bold">
+                        <span>Total Stores:</span>
+                        <span className="text-blue-400">{stores}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                {state.grain < 20 && (
+
+                {totalFood < 20 && (
                   <div className="bg-red-900/30 border border-red-700 p-3 rounded text-red-200">
-                    ⚠️ Warning: Grain stores running low! Allocate more farmers.
-                  </div>
-                )}
-                {state.woodcutters > state.tools && (
-                  <div className="bg-yellow-900/30 border border-yellow-700 p-3 rounded text-yellow-200">
-                    ⚠️ Tool shortage: Only {state.tools} axes available for{" "}
-                    {state.woodcutters} woodcutters.
+                    ⚠️ Warning: Food supplies critically low! Assign more
+                    gatherers and hunters.
                   </div>
                 )}
               </div>
@@ -279,26 +292,43 @@ export default function KingdomPlanner() {
 
               <div className="space-y-4">
                 {[
-                  { key: "farmers", label: "Farmers", desc: "Produce grain" },
+                  {
+                    key: "gatherers",
+                    label: "Gatherers",
+                    desc: "Collect berries, sticks, and rocks (fields & forests)",
+                  },
+                  {
+                    key: "hunters",
+                    label: "Hunters",
+                    desc: "Hunt small and large game",
+                  },
                   {
                     key: "woodcutters",
                     label: "Woodcutters",
-                    desc: "Gather wood (limited by tools)",
+                    desc: "Chop logs from forests (tool-limited)",
                   },
                   {
-                    key: "gatherers",
-                    label: "Stone Gatherers",
-                    desc: "Collect stone",
+                    key: "stoneWorkers",
+                    label: "Stone Workers",
+                    desc: "Mine stone from mountains",
                   },
-                ].map(({ key, label, desc }) => (
+                  {
+                    key: "farmers",
+                    label: "Farmers",
+                    desc: "Farm grain (disabled - no farming yet)",
+                    disabled: true,
+                  },
+                ].map(({ key, label, desc, disabled }) => (
                   <div
                     key={key}
-                    className="bg-gray-900 p-4 rounded border border-gray-700"
+                    className={`bg-gray-900 p-4 rounded border border-gray-700 ${
+                      disabled ? "opacity-50" : ""
+                    }`}
                   >
                     <div className="flex justify-between items-center mb-2">
                       <div>
                         <div className="font-semibold text-amber-200">
-                          {label}
+                          {label} {disabled && "(Disabled)"}
                         </div>
                         <div className="text-xs text-gray-400">{desc}</div>
                       </div>
@@ -306,54 +336,56 @@ export default function KingdomPlanner() {
                         {state[key as keyof typeof state] as number}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          allocateLabor(
-                            key,
-                            (state[key as keyof typeof state] as number) - 5
-                          )
-                        }
-                        className="px-3 py-1 bg-red-800 hover:bg-red-700 rounded text-sm"
-                      >
-                        -5
-                      </button>
-                      <button
-                        onClick={() =>
-                          allocateLabor(
-                            key,
-                            (state[key as keyof typeof state] as number) - 1
-                          )
-                        }
-                        className="px-3 py-1 bg-red-800 hover:bg-red-700 rounded text-sm"
-                      >
-                        -1
-                      </button>
-                      <button
-                        onClick={() =>
-                          allocateLabor(
-                            key,
-                            (state[key as keyof typeof state] as number) + 1
-                          )
-                        }
-                        className="px-3 py-1 bg-green-800 hover:bg-green-700 rounded text-sm"
-                        disabled={state.idle < 1}
-                      >
-                        +1
-                      </button>
-                      <button
-                        onClick={() =>
-                          allocateLabor(
-                            key,
-                            (state[key as keyof typeof state] as number) + 5
-                          )
-                        }
-                        className="px-3 py-1 bg-green-800 hover:bg-green-700 rounded text-sm"
-                        disabled={state.idle < 5}
-                      >
-                        +5
-                      </button>
-                    </div>
+                    {!disabled && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            allocateLabor(
+                              key,
+                              (state[key as keyof typeof state] as number) - 5
+                            )
+                          }
+                          className="px-3 py-1 bg-red-800 hover:bg-red-700 rounded text-sm"
+                        >
+                          -5
+                        </button>
+                        <button
+                          onClick={() =>
+                            allocateLabor(
+                              key,
+                              (state[key as keyof typeof state] as number) - 1
+                            )
+                          }
+                          className="px-3 py-1 bg-red-800 hover:bg-red-700 rounded text-sm"
+                        >
+                          -1
+                        </button>
+                        <button
+                          onClick={() =>
+                            allocateLabor(
+                              key,
+                              (state[key as keyof typeof state] as number) + 1
+                            )
+                          }
+                          className="px-3 py-1 bg-green-800 hover:bg-green-700 rounded text-sm"
+                          disabled={state.idle < 1}
+                        >
+                          +1
+                        </button>
+                        <button
+                          onClick={() =>
+                            allocateLabor(
+                              key,
+                              (state[key as keyof typeof state] as number) + 5
+                            )
+                          }
+                          className="px-3 py-1 bg-green-800 hover:bg-green-700 rounded text-sm"
+                          disabled={state.idle < 5}
+                        >
+                          +5
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -548,49 +580,118 @@ export default function KingdomPlanner() {
           {activeTab === "resources" && (
             <div>
               <h2 className="text-2xl font-bold mb-4 text-amber-300">
-                Resource Stockpile
+                Resource Details
               </h2>
+
               <div className="grid grid-cols-2 gap-4">
-                {[
-                  {
-                    name: "Grain",
-                    value: state.grain,
-                    icon: "🌾",
-                    desc: "Food for your people",
-                  },
-                  {
-                    name: "Wood",
-                    value: state.wood,
-                    icon: "🪵",
-                    desc: "Building material",
-                  },
-                  {
-                    name: "Stone",
-                    value: state.stone,
-                    icon: "🪨",
-                    desc: "Construction resource",
-                  },
-                  {
-                    name: "Tools",
-                    value: state.tools,
-                    icon: "🔨",
-                    desc: "Enables labor efficiency",
-                  },
-                ].map((resource) => (
-                  <div
-                    key={resource.name}
-                    className="bg-gray-900 p-4 rounded border border-gray-700"
-                  >
-                    <div className="text-3xl mb-2">{resource.icon}</div>
-                    <div className="font-semibold text-amber-200">
-                      {resource.name}
+                {/* Food Resources */}
+                <div className="bg-gray-900 p-4 rounded border border-gray-700">
+                  <h3 className="font-semibold mb-3 text-amber-200 flex items-center gap-2">
+                    🍖 Food Resources
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">
+                        Rations (1.0 value):
+                      </span>
+                      <span className="font-bold">{state.rations}</span>
                     </div>
-                    <div className="text-2xl font-bold">{resource.value}</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {resource.desc}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">
+                        Berries (0.3 value):
+                      </span>
+                      <span className="font-bold">{state.berries}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">
+                        Small Game (0.8 value):
+                      </span>
+                      <span className="font-bold">{state.smallGame}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">
+                        Large Game (2.0 value):
+                      </span>
+                      <span className="font-bold">{state.largeGame}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Grain (0.5 value):</span>
+                      <span className="font-bold">{state.grain}</span>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Wood Resources */}
+                <div className="bg-gray-900 p-4 rounded border border-gray-700">
+                  <h3 className="font-semibold mb-3 text-amber-200 flex items-center gap-2">
+                    🪵 Wood Resources
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Sticks (firewood):</span>
+                      <span className="font-bold">{state.sticks}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">
+                        Logs (construction):
+                      </span>
+                      <span className="font-bold">{state.logs}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stone Resources */}
+                <div className="bg-gray-900 p-4 rounded border border-gray-700">
+                  <h3 className="font-semibold mb-3 text-amber-200 flex items-center gap-2">
+                    🪨 Stone Resources
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Rocks:</span>
+                      <span className="font-bold">{state.rocks}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Stone:</span>
+                      <span className="font-bold">{state.stone}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tools */}
+                <div className="bg-gray-900 p-4 rounded border border-gray-700">
+                  <h3 className="font-semibold mb-3 text-amber-200 flex items-center gap-2">
+                    🔨 Tools
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Available tools:</span>
+                      <span className="font-bold">{state.tools}</span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Woodcutters limited by tool count
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Production info */}
+              <div className="mt-4 bg-gray-900 p-4 rounded border border-gray-700">
+                <h3 className="font-semibold mb-2 text-amber-200">
+                  Terrain Requirements
+                </h3>
+                <div className="text-sm space-y-1 text-gray-400">
+                  <div>
+                    • <span className="text-green-400">Fields</span>: Berries,
+                    Small Game, Rocks, Sticks
+                  </div>
+                  <div>
+                    • <span className="text-green-600">Forests</span>: Berries,
+                    Small Game, Large Game, Sticks, Logs
+                  </div>
+                  <div>
+                    • <span className="text-gray-400">Mountains</span>: Stone
+                  </div>
+                </div>
               </div>
             </div>
           )}
