@@ -16,6 +16,7 @@ import {
   revealExpeditionArea,
   checkExpeditionLoss,
 } from "../utils/expeditionUtils";
+import { happinessFlavorText } from "@/utils/dictionary";
 
 export const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -349,29 +350,8 @@ export const useGameState = () => {
         // Flavor text every 10 days
         if (newState.day % 10 === 0 && lastFlavorDay.current !== newState.day) {
           lastFlavorDay.current = newState.day;
-          if (newState.happiness > 0.8) {
-            const messages = [
-              "The settlers hum work songs as they toil. Morale is high.",
-              "Children play by the river. Your colony thrives.",
-              "The evening fires burn bright with laughter and stories.",
-            ];
-            addChronicleEntry(
-              newState.day,
-              messages[Math.floor(Math.random() * messages.length)],
-              "info"
-            );
-          } else if (newState.happiness < 0.4) {
-            const messages = [
-              "Grumbling voices echo from the workers' quarters.",
-              "The settlers move slowly, their spirits flagging.",
-              "Tension hangs heavy in the air. Something must change.",
-            ];
-            addChronicleEntry(
-              newState.day,
-              messages[Math.floor(Math.random() * messages.length)],
-              "warning"
-            );
-          }
+          const message = happinessFlavorText(newState.happiness);
+          addChronicleEntry(newState.day, message, "info");
         }
 
         return newState;

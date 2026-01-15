@@ -1,0 +1,18 @@
+{
+  "highMorale": [
+    "The settlers hum work songs as they toil. Morale is high.",
+    "Children play by the river. Your colony thrives.",
+    "The evening fires burn bright with laughter and stories.",
+    "The settlers move with purpose and joy in their hearts.",
+    "A sense of camaraderie fills the air. The colony is strong.",
+    "The settlers gather for a feast, celebrating their successes."
+  ],
+  "lowMorale": [
+    "A cold wind blows through the settlement. Morale is low.",
+    "The settlers move about silently, burdened by hardship.",
+    "Dark clouds gather overhead as the colony struggles.",
+    "Grumbling voices echo from the workers' quarters.",
+    "The settlers move slowly, their spirits flagging.",
+    "Tension hangs heavy in the air. Something must change."
+  ]
+}
