@@ -171,7 +171,7 @@ export const useGameState = () => {
         });
 
         // Production multipliers based on terrain
-        const fieldMult = Math.min(1.0, fieldCount / 10);
+        // const fieldMult = Math.min(1.0, fieldCount / 10);
         const forestMult = Math.min(1.0, forestCount / 5);
         const mountainMult = Math.min(1.0, mountainCount / 3);
 

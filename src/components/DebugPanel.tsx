@@ -67,9 +67,9 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
       if (tile.terrain === "mountain") mountainCount++;
     }
   });
-  const fieldMult = Math.min(1.0, fieldCount / 10);
-  const forestMult = Math.min(1.0, forestCount / 5);
-  const mountainMult = Math.min(1.0, mountainCount / 3);
+  // const fieldMult = Math.min(1.0, fieldCount / 10);
+  // const forestMult = Math.min(1.0, forestCount / 5);
+  // const mountainMult = Math.min(1.0, mountainCount / 3);
 
   return (
     <div className="fixed top-4 right-4 bg-black/90 border border-amber-600 rounded-lg p-4 text-xs font-mono max-w-sm z-50">

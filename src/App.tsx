@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ColonyCharter } from "./components/ColonyCharter";
 import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
