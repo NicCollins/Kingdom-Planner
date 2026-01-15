@@ -1,4 +1,4 @@
-import { generateValidMap } from "./mapGeneration";
+import { generateValidMap } from "../utils/mapGeneration";
 
 // Test map generation multiple times
 console.log("Testing map generation...");
