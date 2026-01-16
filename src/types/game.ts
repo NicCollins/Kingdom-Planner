@@ -42,9 +42,9 @@ export interface GameState {
 
   // Terrain revealed count
   terrainUpdated: boolean;
-  fieldCount?: number;
-  forestCount?: number;
-  mountainCount?: number;
+  fieldCount: number;
+  forestCount: number;
+  mountainCount: number;
 }
 
 export interface ChronicleEntry {

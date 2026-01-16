@@ -165,27 +165,28 @@ export const useGameState = () => {
       setState((prev) => {
         const newState = { ...prev };
 
-        // Count available terrain
-        let fieldCount = 0,
-          forestCount = 0,
-          mountainCount = 0;
-        mapTiles.forEach((tile) => {
-          if (tile.revealed) {
-            if (tile.terrain === "field") fieldCount++;
-            if (tile.terrain === "forest") forestCount++;
-            if (tile.terrain === "mountain") mountainCount++;
-          }
-        });
+        if (!prev.terrainUpdated) {
+          // Count available terrain
+          mapTiles.forEach((tile) => {
+            if (tile.revealed) {
+              if (tile.terrain === "field") newState.fieldCount++;
+              if (tile.terrain === "forest") newState.forestCount++;
+              if (tile.terrain === "mountain") newState.mountainCount++;
+            }
+          });
+
+          newState.terrainUpdated = true;
+        }
 
         // Production multipliers based on terrain
         // const fieldMult = Math.min(1.0, fieldCount / 10);
-        const forestMult = Math.min(1.0, forestCount / 5);
-        const mountainMult = Math.min(1.0, mountainCount / 3);
+        const forestMult = Math.min(1.0, newState.forestCount / 5);
+        const mountainMult = Math.min(1.0, newState.mountainCount / 3);
 
         // GATHERERS: berries, sticks, rocks (fields & forests)
         const gatherTerrainMult = Math.min(
           1.0,
-          (fieldCount + forestCount) / 15
+          (newState.fieldCount + newState.forestCount) / 15
         );
         const berriesGathered = Math.floor(
           prev.gatherers * 0.3 * gatherTerrainMult * prev.happiness
@@ -198,8 +199,11 @@ export const useGameState = () => {
         );
 
         // HUNTERS: small game (fields & forests), large game (forests only)
-        const huntFieldMult = Math.min(1.0, (fieldCount + forestCount) / 12);
-        const huntForestMult = Math.min(1.0, forestCount / 5);
+        const huntFieldMult = Math.min(
+          1.0,
+          (newState.fieldCount + newState.forestCount) / 12
+        );
+        const huntForestMult = Math.min(1.0, newState.forestCount / 5);
         const smallGameHunted = Math.floor(
           prev.hunters * 0.4 * huntFieldMult * prev.happiness
         );
@@ -340,6 +344,7 @@ export const useGameState = () => {
                     `Expedition returns! They discovered ${terrainDesc} and mapped their journey, revealing ${revealedCount} hexes. ${exp.workers} settlers rejoin the colony.`,
                     "info"
                   );
+                  newState.terrainUpdated = false;
                 }
                 return { ...exp, status: "completed" as const };
               }
