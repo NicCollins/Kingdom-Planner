@@ -39,6 +39,12 @@ export interface GameState {
   // Time
   day: number;
   season: string;
+
+  // Terrain revealed count
+  terrainUpdated: boolean;
+  fieldCount?: number;
+  forestCount?: number;
+  mountainCount?: number;
 }
 
 export interface ChronicleEntry {

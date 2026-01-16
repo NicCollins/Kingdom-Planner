@@ -72,6 +72,12 @@ export const useGameState = () => {
 
     day: 1,
     season: "Spring",
+
+    // Terrain revealed count
+    terrainUpdated: false,
+    fieldCount: 0,
+    forestCount: 0,
+    mountainCount: 0,
   });
 
   const [timeSpeed, setTimeSpeed] = useState<TimeSpeed>("normal");
