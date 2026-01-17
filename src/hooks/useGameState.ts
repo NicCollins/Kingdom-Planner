@@ -16,6 +16,13 @@ import {
   revealExpeditionArea,
   checkExpeditionLoss,
 } from "../utils/expeditionUtils";
+import {
+  calculateTerrainCounts,
+  calculateGatheringValues,
+  calculateHuntingValues,
+  calculateWoodValues,
+  calculateStoneValues,
+} from "@/utils/resourceUtils";
 import { happinessFlavorText } from "@/utils/dictionary";
 
 export const useGameState = () => {
@@ -167,66 +174,22 @@ export const useGameState = () => {
 
         if (!prev.terrainUpdated) {
           // Count available terrain
-          mapTiles.forEach((tile) => {
-            if (tile.revealed) {
-              if (tile.terrain === "field") newState.fieldCount++;
-              if (tile.terrain === "forest") newState.forestCount++;
-              if (tile.terrain === "mountain") newState.mountainCount++;
-            }
-          });
+          calculateTerrainCounts(newState, mapTiles);
 
           newState.terrainUpdated = true;
         }
 
-        // Production multipliers based on terrain
-        // const fieldMult = Math.min(1.0, fieldCount / 10);
-        const forestMult = Math.min(1.0, newState.forestCount / 5);
-        const mountainMult = Math.min(1.0, newState.mountainCount / 3);
-
         // GATHERERS: berries, sticks, rocks (fields & forests)
-        const gatherTerrainMult = Math.min(
-          1.0,
-          (newState.fieldCount + newState.forestCount) / 15
-        );
-        const berriesGathered = Math.floor(
-          prev.gatherers * 0.3 * gatherTerrainMult * prev.happiness
-        );
-        const sticksGathered = Math.floor(
-          prev.gatherers * 0.4 * gatherTerrainMult * prev.happiness
-        );
-        const rocksGathered = Math.floor(
-          prev.gatherers * 0.2 * gatherTerrainMult * prev.happiness
-        );
+        calculateGatheringValues(newState, prev.gatherers, prev.happiness);
 
         // HUNTERS: small game (fields & forests), large game (forests only)
-        const huntFieldMult = Math.min(
-          1.0,
-          (newState.fieldCount + newState.forestCount) / 12
-        );
-        const huntForestMult = Math.min(1.0, newState.forestCount / 5);
-        const smallGameHunted = Math.floor(
-          prev.hunters * 0.4 * huntFieldMult * prev.happiness
-        );
-        const largeGameHunted = Math.floor(
-          prev.hunters * 0.2 * huntForestMult * prev.happiness
-        );
+        calculateHuntingValues(newState, prev.hunters, prev.happiness);
 
         // WOODCUTTERS: logs (forests only, tool-limited)
-        const logsChopped = Math.floor(
-          Math.min(prev.woodcutters, prev.tools) * 0.3 * forestMult
-        );
+        calculateWoodValues(newState, prev.woodcutters, prev.happiness);
 
         // STONE WORKERS: stone (mountains only)
-        const stoneMined = Math.floor(prev.stoneWorkers * 0.2 * mountainMult);
-
-        // Update resources
-        newState.berries = prev.berries + berriesGathered;
-        newState.smallGame = prev.smallGame + smallGameHunted;
-        newState.largeGame = prev.largeGame + largeGameHunted;
-        newState.sticks = prev.sticks + sticksGathered;
-        newState.logs = prev.logs + logsChopped;
-        newState.rocks = prev.rocks + rocksGathered;
-        newState.stone = prev.stone + stoneMined;
+        calculateStoneValues(newState, prev.stoneWorkers, prev.happiness);
 
         // Food consumption
         const foodNeeded = prev.population * 0.1;
