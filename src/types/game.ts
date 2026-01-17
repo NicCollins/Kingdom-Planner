@@ -74,16 +74,6 @@ export const TIME_SPEEDS = {
 export type TimeSpeed = keyof typeof TIME_SPEEDS;
 
 // Helper functions for aggregated resources
-export const calculateTotalFood = (state: GameState): number => {
-  return Math.floor(
-    state.rations * 1.0 +
-      state.berries * 0.3 +
-      state.smallGame * 0.8 +
-      state.largeGame * 2.0 +
-      state.grain * 0.5
-  );
-};
-
 export const calculateFirewood = (state: GameState): number => {
   return state.sticks;
 };

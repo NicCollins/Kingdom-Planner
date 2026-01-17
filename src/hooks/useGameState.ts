@@ -7,7 +7,6 @@ import {
   TimeSpeed,
   TIME_SPEEDS,
   Expedition,
-  calculateTotalFood,
 } from "../types/game";
 import { generateValidMap } from "../utils/mapGeneration";
 import {
@@ -20,6 +19,10 @@ import {
   calculateTerrainCounts,
   calculateResourceCollection,
 } from "@/utils/resourceUtils";
+import {
+  calculateFoodConsumption,
+  calculateTotalFood,
+} from "@/utils/foodUtils";
 import { happinessFlavorText } from "@/utils/dictionary";
 
 export const useGameState = () => {
@@ -184,47 +187,7 @@ export const useGameState = () => {
         const totalFood = calculateTotalFood(prev);
 
         if (totalFood >= foodNeeded) {
-          let remaining = foodNeeded;
-
-          // Consume in priority order: berries -> rations -> small game -> large game
-          const berriesNeeded = Math.min(
-            newState.berries,
-            Math.ceil(remaining / 0.3)
-          );
-          newState.berries = Math.max(0, newState.berries - berriesNeeded);
-          remaining -= berriesNeeded * 0.3;
-
-          if (remaining > 0) {
-            const rationsNeeded = Math.min(
-              newState.rations,
-              Math.ceil(remaining / 1.0)
-            );
-            newState.rations = Math.max(0, newState.rations - rationsNeeded);
-            remaining -= rationsNeeded * 1.0;
-          }
-
-          if (remaining > 0) {
-            const smallGameNeeded = Math.min(
-              newState.smallGame,
-              Math.ceil(remaining / 0.8)
-            );
-            newState.smallGame = Math.max(
-              0,
-              newState.smallGame - smallGameNeeded
-            );
-            remaining -= smallGameNeeded * 0.8;
-          }
-
-          if (remaining > 0) {
-            const largeGameNeeded = Math.min(
-              newState.largeGame,
-              Math.ceil(remaining / 2.0)
-            );
-            newState.largeGame = Math.max(
-              0,
-              newState.largeGame - largeGameNeeded
-            );
-          }
+          calculateFoodConsumption(newState, foodNeeded);
 
           if (prev.happiness < 1.0) {
             newState.happiness = Math.min(1.0, prev.happiness + 0.01);

@@ -5,8 +5,8 @@ import {
   ChronicleEntry,
   TimeSpeed,
   TIME_SPEEDS,
-  calculateTotalFood,
 } from "../types/game";
+import { calculateTotalFood } from "@/utils/foodUtils";
 
 interface DebugPanelProps {
   state: GameState;

@@ -2,16 +2,12 @@ import { useState, useEffect } from "react";
 import { ColonyCharter } from "./components/ColonyCharter";
 import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
-import {
-  calculateTotalFood,
-  calculateFirewood,
-  calculateStores,
-  TIME_SPEEDS,
-} from "./types/game";
+import { calculateFirewood, calculateStores, TIME_SPEEDS } from "./types/game";
 import { Dashboard } from "./components/Tabs/Dashboard";
 import { Labor } from "./components/Tabs/Labor";
 import { Map } from "./components/Tabs/Map";
 import { Resources } from "./components/Tabs/Resources";
+import { calculateTotalFood } from "@/utils/foodUtils";
 
 export default function KingdomPlanner() {
   const {
