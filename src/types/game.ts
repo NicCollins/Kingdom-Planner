@@ -45,6 +45,11 @@ export interface GameState {
   fieldCount: number;
   forestCount: number;
   mountainCount: number;
+
+  // Resource Totals
+  totalFood: number;
+  totalFirewood: number;
+  totalStores: number;
 }
 
 export interface ChronicleEntry {

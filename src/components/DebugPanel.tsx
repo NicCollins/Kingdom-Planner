@@ -6,7 +6,6 @@ import {
   TimeSpeed,
   TIME_SPEEDS,
 } from "../types/game";
-import { calculateTotalFood } from "@/utils/foodUtils";
 
 interface DebugPanelProps {
   state: GameState;
@@ -112,9 +111,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
             <div>Small Game: {state.smallGame}</div>
             <div>Large Game: {state.largeGame}</div>
             <div>Grain: {state.grain}</div>
-            <div className="text-yellow-400">
-              Total Food: {calculateTotalFood(state)}
-            </div>
+            <div className="text-yellow-400">Total Food: {state.totalFood}</div>
           </div>
         </div>
 

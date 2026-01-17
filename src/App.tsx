@@ -7,7 +7,6 @@ import { Dashboard } from "./components/Tabs/Dashboard";
 import { Labor } from "./components/Tabs/Labor";
 import { Map } from "./components/Tabs/Map";
 import { Resources } from "./components/Tabs/Resources";
-import { calculateTotalFood } from "@/utils/foodUtils";
 
 export default function KingdomPlanner() {
   const {
@@ -28,7 +27,7 @@ export default function KingdomPlanner() {
     mapRevealCounter,
   } = useGameState();
 
-  const totalFood = calculateTotalFood(state);
+  const totalFood = state.totalFood;
   const firewood = calculateFirewood(state);
   const stores = calculateStores(state);
 

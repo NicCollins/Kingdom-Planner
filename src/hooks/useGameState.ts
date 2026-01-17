@@ -85,6 +85,11 @@ export const useGameState = () => {
     fieldCount: 0,
     forestCount: 0,
     mountainCount: 0,
+
+    // Resource Totals
+    totalFood: 0,
+    totalFirewood: 0,
+    totalStores: 0,
   });
 
   const [timeSpeed, setTimeSpeed] = useState<TimeSpeed>("normal");
@@ -184,9 +189,9 @@ export const useGameState = () => {
 
         // Food consumption
         const foodNeeded = prev.population * 0.1;
-        const totalFood = calculateTotalFood(prev);
+        newState.totalFood = calculateTotalFood(prev);
 
-        if (totalFood >= foodNeeded) {
+        if (newState.totalFood >= foodNeeded) {
           calculateFoodConsumption(newState, foodNeeded);
 
           if (prev.happiness < 1.0) {
