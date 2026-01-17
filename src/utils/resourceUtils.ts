@@ -21,6 +21,16 @@ export const calculateTerrainCounts = (
   state.mountainCount = mountainCount;
 };
 
+export const calculateResourceCollection = (
+  state: GameState,
+  prev: GameState
+) => {
+  calculateGatheringValues(state, prev.gatherers, prev.happiness);
+  calculateHuntingValues(state, prev.hunters, prev.happiness);
+  calculateWoodValues(state, prev.woodcutters, prev.happiness);
+  calculateStoneValues(state, prev.stoneWorkers, prev.happiness);
+};
+
 export const calculateGatheringValues = (
   state: GameState,
   gatherers: number,

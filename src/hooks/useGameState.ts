@@ -18,10 +18,7 @@ import {
 } from "../utils/expeditionUtils";
 import {
   calculateTerrainCounts,
-  calculateGatheringValues,
-  calculateHuntingValues,
-  calculateWoodValues,
-  calculateStoneValues,
+  calculateResourceCollection,
 } from "@/utils/resourceUtils";
 import { happinessFlavorText } from "@/utils/dictionary";
 
@@ -179,17 +176,8 @@ export const useGameState = () => {
           newState.terrainUpdated = true;
         }
 
-        // GATHERERS: berries, sticks, rocks (fields & forests)
-        calculateGatheringValues(newState, prev.gatherers, prev.happiness);
-
-        // HUNTERS: small game (fields & forests), large game (forests only)
-        calculateHuntingValues(newState, prev.hunters, prev.happiness);
-
-        // WOODCUTTERS: logs (forests only, tool-limited)
-        calculateWoodValues(newState, prev.woodcutters, prev.happiness);
-
-        // STONE WORKERS: stone (mountains only)
-        calculateStoneValues(newState, prev.stoneWorkers, prev.happiness);
+        // Calculate resource collection
+        calculateResourceCollection(newState, prev);
 
         // Food consumption
         const foodNeeded = prev.population * 0.1;
