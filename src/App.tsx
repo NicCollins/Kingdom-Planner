@@ -8,6 +8,7 @@ import { Map } from "./components/Tabs/Map";
 import { Resources } from "./components/Tabs/Resources";
 import { Header } from "./components/Header";
 import { Chronicle } from "./components/Chronicle";
+import { Policies } from "./components/Tabs/Policies";
 
 export default function KingdomPlanner() {
   const {
@@ -77,7 +78,7 @@ export default function KingdomPlanner() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
-  const tabs = ["Dashboard", "Labor", "Map", "Resources"];
+  const tabs = ["Dashboard", "Labor", "Map", "Resources", "Policies"];
 
   // Show charter screen before game starts
   if (!gameStarted) {
@@ -159,6 +160,8 @@ export default function KingdomPlanner() {
           )}
 
           {activeTab === "resources" && <Resources state={state} />}
+
+          {activeTab === "policies" && <Policies />}
         </div>
 
         {/* Chronicle */}
