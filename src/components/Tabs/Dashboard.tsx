@@ -1,17 +1,11 @@
 import React from "react";
-import { GameState } from "@/types/game";
+import { calculateStores, GameState } from "@/types/game";
 
 interface DashboardProps {
   state: GameState;
-  totalFood: number;
-  stores: number;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({
-  state,
-  totalFood,
-  stores,
-}) => {
+export const Dashboard: React.FC<DashboardProps> = ({ state }) => {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4 text-amber-300">Colony Status</h2>
@@ -49,9 +43,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="pt-2 border-t border-gray-700 flex justify-between font-bold">
                 <span>Total Food Value:</span>
                 <span
-                  className={totalFood < 20 ? "text-red-400" : "text-green-400"}
+                  className={
+                    state.totalFood < 20 ? "text-red-400" : "text-green-400"
+                  }
                 >
-                  {totalFood}
+                  {state.totalFood}
                 </span>
               </div>
               <div className="text-xs text-gray-500">
@@ -82,13 +78,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div className="pt-2 border-t border-gray-700 flex justify-between font-bold">
                 <span>Total Stores:</span>
-                <span className="text-blue-400">{stores}</span>
+                <span className="text-blue-400">{calculateStores(state)}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {totalFood < 20 && (
+        {state.totalFood < 20 && (
           <div className="bg-red-900/30 border border-red-700 p-3 rounded text-red-200">
             ⚠️ Warning: Food supplies critically low! Assign more gatherers and
             hunters.

@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { ColonyCharter } from "./components/ColonyCharter";
 import { DebugPanel } from "./components/DebugPanel";
 import { useGameState } from "./hooks/useGameState";
-import { calculateFirewood, calculateStores, TIME_SPEEDS } from "./types/game";
 import { Dashboard } from "./components/Tabs/Dashboard";
 import { Labor } from "./components/Tabs/Labor";
 import { Map } from "./components/Tabs/Map";
 import { Resources } from "./components/Tabs/Resources";
+import { Header } from "./components/Header";
+import { Chronicle } from "./components/Chronicle";
 
 export default function KingdomPlanner() {
   const {
@@ -26,10 +27,6 @@ export default function KingdomPlanner() {
     startExpedition,
     mapRevealCounter,
   } = useGameState();
-
-  const totalFood = state.totalFood;
-  const firewood = calculateFirewood(state);
-  const stores = calculateStores(state);
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [debugMode, setDebugMode] = useState(false);
@@ -115,56 +112,11 @@ export default function KingdomPlanner() {
 
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-4 border border-gray-700">
-          <h1 className="text-3xl font-bold text-amber-400 mb-2">
-            Kingdom Planner
-          </h1>
-          <div className="flex justify-between items-center">
-            <div className="flex gap-6 text-sm">
-              <div>
-                Day {state.day} - {state.season}
-              </div>
-              <div>Population: {state.population}</div>
-              <div className={totalFood < 20 ? "text-red-400" : ""}>
-                Food: {totalFood}
-              </div>
-              <div>Firewood: {firewood}</div>
-              <div>Tools: {state.tools}</div>
-              <div>Stores: {stores}</div>
-            </div>
-
-            {/* Time Controls */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 mr-2">Time:</span>
-              {(["paused", "slow", "normal", "fast", "veryFast"] as const).map(
-                (speed) => (
-                  <button
-                    key={speed}
-                    onClick={() => setTimeSpeed(speed)}
-                    className={`px-3 py-1 rounded text-sm transition-colors ${
-                      timeSpeed === speed
-                        ? speed === "paused"
-                          ? "bg-red-600 text-white"
-                          : "bg-amber-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                    title={`${speed} (${TIME_SPEEDS[speed]}ms)`}
-                  >
-                    {speed === "paused"
-                      ? "⏸"
-                      : speed === "slow"
-                      ? "▶"
-                      : speed === "normal"
-                      ? "▶▶"
-                      : speed === "fast"
-                      ? "▶▶▶"
-                      : "⏩"}
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        </div>
+        <Header
+          state={state}
+          timeSpeed={timeSpeed}
+          setTimeSpeed={setTimeSpeed}
+        />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
@@ -185,9 +137,7 @@ export default function KingdomPlanner() {
 
         {/* Tab Content */}
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          {activeTab === "dashboard" && (
-            <Dashboard state={state} totalFood={totalFood} stores={stores} />
-          )}
+          {activeTab === "dashboard" && <Dashboard state={state} />}
 
           {activeTab === "labor" && (
             <Labor state={state} allocateLabor={allocateLabor} />
@@ -212,29 +162,7 @@ export default function KingdomPlanner() {
         </div>
 
         {/* Chronicle */}
-        <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <h3 className="font-semibold mb-2 text-amber-300">Chronicle</h3>
-          <div
-            ref={chronicleRef}
-            className="max-h-32 overflow-y-auto text-sm space-y-1"
-          >
-            {chronicle.map((entry, idx) => (
-              <div
-                key={idx}
-                className={`${
-                  entry.type === "danger"
-                    ? "text-red-400"
-                    : entry.type === "warning"
-                    ? "text-yellow-400"
-                    : "text-gray-400"
-                }`}
-              >
-                <span className="text-gray-500">Day {entry.day}:</span>{" "}
-                {entry.message}
-              </div>
-            ))}
-          </div>
-        </div>
+        <Chronicle chronicle={chronicle} chronicleRef={chronicleRef} />
       </div>
     </div>
   );
