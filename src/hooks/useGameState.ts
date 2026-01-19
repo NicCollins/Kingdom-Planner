@@ -86,10 +86,10 @@ export const useGameState = () => {
     forestCount: 0,
     mountainCount: 0,
 
-    // Resource Totals
-    totalFood: 0,
-    totalFirewood: 0,
-    totalStores: 0,
+    // Resource Totals - starting values
+    totalFood: 120,
+    totalFirewood: 50,
+    totalStores: 65,
   });
 
   const [timeSpeed, setTimeSpeed] = useState<TimeSpeed>("normal");
