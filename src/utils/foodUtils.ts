@@ -2,11 +2,11 @@ import { GameState } from "@/types/game";
 
 export const calculateTotalFood = (state: GameState): number => {
   return Math.floor(
-    state.rations * 1.0 +
-      state.berries * 0.3 +
-      state.smallGame * 0.8 +
-      state.largeGame * 2.0 +
-      state.grain * 0.5
+    state.rations +
+      state.berries +
+      state.smallGame +
+      state.largeGame +
+      state.grain
   );
 };
 
