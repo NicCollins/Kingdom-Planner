@@ -70,8 +70,8 @@ export interface Expedition {
 
 export const TIME_SPEEDS = {
   paused: 0,
-  slow: 2000,
-  normal: 1000,
+  slow: 8000,
+  normal: 2000,
   fast: 500,
   veryFast: 250,
 } as const;
