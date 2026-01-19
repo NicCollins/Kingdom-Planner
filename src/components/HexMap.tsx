@@ -1,6 +1,12 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { HexTile, TerrainType } from "../types/game";
+import {
+  drawColonyMarker,
+  drawExpeditionMarker,
+  drawHex,
+  pixelToHex,
+} from "@/utils/drawingUtils";
 
 interface HexMapProps {
   mapTiles: Map<string, HexTile>;
@@ -45,40 +51,6 @@ export const HexMap: React.FC<HexMapProps> = ({
     if (!containerRef.current || pixiInitialized) return;
 
     let mounted = true;
-
-    // Improved pixel to hex conversion using cube coordinates
-    const pixelToHex = (
-      pixelX: number,
-      pixelY: number,
-      hexSize: number
-    ): { q: number; r: number } => {
-      // Offset coordinates
-      const x = (pixelX - 300) / hexSize;
-      const y = (pixelY - 200) / hexSize;
-
-      // Convert to axial coordinates
-      const q = (x * Math.sqrt(3)) / 3 - y / 3;
-      const r = (y * 2) / 3;
-
-      // Convert to cube coordinates for proper rounding
-      const s = -q - r;
-
-      let rq = Math.round(q);
-      let rr = Math.round(r);
-      const rs = Math.round(s);
-
-      const qDiff = Math.abs(rq - q);
-      const rDiff = Math.abs(rr - r);
-      const sDiff = Math.abs(rs - s);
-
-      if (qDiff > rDiff && qDiff > sDiff) {
-        rq = -rr - rs;
-      } else if (rDiff > sDiff) {
-        rr = -rq - rs;
-      }
-
-      return { q: rq, r: rr };
-    };
 
     const initPixi = async () => {
       const app = new PIXI.Application();
@@ -130,31 +102,6 @@ export const HexMap: React.FC<HexMapProps> = ({
         water: 0x4a6fa5,
       };
 
-      const drawHex = (
-        cx: number,
-        cy: number,
-        size: number,
-        fillColor: number,
-        lineColor: number
-      ) => {
-        graphics.lineStyle(2, lineColor);
-        graphics.beginFill(fillColor);
-
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI / 3) * i - Math.PI / 2;
-          const x = cx + size * Math.cos(angle);
-          const y = cy + size * Math.sin(angle);
-
-          if (i === 0) {
-            graphics.moveTo(x, y);
-          } else {
-            graphics.lineTo(x, y);
-          }
-        }
-        graphics.closePath();
-        graphics.endFill();
-      };
-
       const redrawMap = () => {
         graphics.clear();
 
@@ -169,10 +116,11 @@ export const HexMap: React.FC<HexMapProps> = ({
               y,
               hexSize,
               terrainColors[tile.terrain],
-              terrainBorders[tile.terrain]
+              terrainBorders[tile.terrain],
+              graphics
             );
           } else {
-            drawHex(x, y, hexSize, 0x0a0a0a, 0x333333);
+            drawHex(x, y, hexSize, 0x0a0a0a, 0x333333, graphics);
           }
         });
 
@@ -180,44 +128,12 @@ export const HexMap: React.FC<HexMapProps> = ({
         if (selectedTarget) {
           const tile = mapTiles.get(`${selectedTarget.q},${selectedTarget.r}`);
           if (tile && !tile.revealed) {
-            const sx =
-              300 +
-              hexSize *
-                Math.sqrt(3) *
-                (selectedTarget.q + selectedTarget.r / 2);
-            const sy = 200 + hexSize * (3 / 2) * selectedTarget.r;
-
-            // Draw a targeting crosshair icon
-            graphics.lineStyle(3, 0xffaa00);
-
-            // Crosshair lines
-            const size = hexSize * 0.6;
-            graphics.moveTo(sx - size, sy);
-            graphics.lineTo(sx + size, sy);
-            graphics.moveTo(sx, sy - size);
-            graphics.lineTo(sx, sy + size);
-
-            // Circle around it
-            graphics.lineStyle(2, 0xffaa00);
-            graphics.drawCircle(sx, sy, hexSize * 0.5);
+            drawExpeditionMarker(selectedTarget, hexSize, graphics);
           }
         }
 
         // Draw colony marker
-        const colonyX =
-          300 +
-          hexSize * Math.sqrt(3) * (colonyLocation.q + colonyLocation.r / 2);
-        const colonyY = 200 + hexSize * (3 / 2) * colonyLocation.r;
-
-        graphics.lineStyle(3, 0xffd700);
-        graphics.beginFill(0xffd700, 0.3);
-        graphics.drawCircle(colonyX, colonyY, hexSize * 0.6);
-        graphics.endFill();
-
-        graphics.lineStyle(0);
-        graphics.beginFill(0xffd700);
-        graphics.drawCircle(colonyX, colonyY, 4);
-        graphics.endFill();
+        drawColonyMarker(colonyLocation, hexSize, graphics);
       };
 
       redrawMap();
@@ -259,31 +175,6 @@ export const HexMap: React.FC<HexMapProps> = ({
         water: 0x4a6fa5,
       };
 
-      const drawHex = (
-        cx: number,
-        cy: number,
-        size: number,
-        fillColor: number,
-        lineColor: number
-      ) => {
-        graphics.lineStyle(2, lineColor);
-        graphics.beginFill(fillColor);
-
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI / 3) * i - Math.PI / 2;
-          const x = cx + size * Math.cos(angle);
-          const y = cy + size * Math.sin(angle);
-
-          if (i === 0) {
-            graphics.moveTo(x, y);
-          } else {
-            graphics.lineTo(x, y);
-          }
-        }
-        graphics.closePath();
-        graphics.endFill();
-      };
-
       // Draw all tiles
       mapTiles.forEach((tile) => {
         const x = 300 + hexSize * Math.sqrt(3) * (tile.q + tile.r / 2);
@@ -295,10 +186,11 @@ export const HexMap: React.FC<HexMapProps> = ({
             y,
             hexSize,
             terrainColors[tile.terrain],
-            terrainBorders[tile.terrain]
+            terrainBorders[tile.terrain],
+            graphics
           );
         } else {
-          drawHex(x, y, hexSize, 0x0a0a0a, 0x333333);
+          drawHex(x, y, hexSize, 0x0a0a0a, 0x333333, graphics);
         }
       });
 
@@ -306,38 +198,12 @@ export const HexMap: React.FC<HexMapProps> = ({
       if (selectedTarget) {
         const tile = mapTiles.get(`${selectedTarget.q},${selectedTarget.r}`);
         if (tile && !tile.revealed) {
-          const sx =
-            300 +
-            hexSize * Math.sqrt(3) * (selectedTarget.q + selectedTarget.r / 2);
-          const sy = 200 + hexSize * (3 / 2) * selectedTarget.r;
-
-          graphics.lineStyle(3, 0xffaa00);
-          const size = hexSize * 0.6;
-          graphics.moveTo(sx - size, sy);
-          graphics.lineTo(sx + size, sy);
-          graphics.moveTo(sx, sy - size);
-          graphics.lineTo(sx, sy + size);
-
-          graphics.lineStyle(2, 0xffaa00);
-          graphics.drawCircle(sx, sy, hexSize * 0.5);
+          drawExpeditionMarker(selectedTarget, hexSize, graphics);
         }
       }
 
       // Draw colony marker
-      const colonyX =
-        300 +
-        hexSize * Math.sqrt(3) * (colonyLocation.q + colonyLocation.r / 2);
-      const colonyY = 200 + hexSize * (3 / 2) * colonyLocation.r;
-
-      graphics.lineStyle(3, 0xffd700);
-      graphics.beginFill(0xffd700, 0.3);
-      graphics.drawCircle(colonyX, colonyY, hexSize * 0.6);
-      graphics.endFill();
-
-      graphics.lineStyle(0);
-      graphics.beginFill(0xffd700);
-      graphics.drawCircle(colonyX, colonyY, 4);
-      graphics.endFill();
+      drawColonyMarker(colonyLocation, hexSize, graphics);
     }
   }, [
     selectedTarget,
