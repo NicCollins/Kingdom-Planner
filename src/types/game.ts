@@ -10,6 +10,8 @@ export interface HexTile {
 export interface GameState {
   population: number;
 
+  policies: PoliciesState;
+
   // Food resources
   rations: number;
   berries: number;
@@ -66,6 +68,11 @@ export interface Expedition {
   startDay: number;
   arrivalDay: number;
   status: "in-progress" | "completed" | "lost";
+}
+
+export interface PoliciesState {
+  foodRationing: "normal" | "generous" | "strict";
+  laborAllocation: "balanced" | "focusFood" | "focusWood" | "focusStone";
 }
 
 export const TIME_SPEEDS = {

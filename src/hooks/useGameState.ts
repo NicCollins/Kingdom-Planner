@@ -7,6 +7,7 @@ import {
   TimeSpeed,
   TIME_SPEEDS,
   Expedition,
+  PoliciesState,
 } from "../types/game";
 import { generateValidMap } from "../utils/mapGeneration";
 import {
@@ -48,8 +49,15 @@ export const useGameState = () => {
     }
   }, [mapData, mapTiles, colonyLocation]);
 
+  const [policies] = useState<PoliciesState>({
+    foodRationing: "normal",
+    laborAllocation: "balanced",
+  });
+
   const [state, setState] = useState<GameState>({
     population: 50,
+
+    policies: policies,
 
     // Food resources - starting provisions
     rations: 100,
@@ -318,9 +326,20 @@ export const useGameState = () => {
     });
   };
 
+  const setPolicy = (key: keyof PoliciesState, value: string) => {
+    setState((prev) => ({
+      ...prev,
+      policies: {
+        ...prev.policies,
+        [key]: value,
+      },
+    }));
+  };
+
   return {
     state,
     allocateLabor,
+    setPolicy,
     timeSpeed,
     setTimeSpeed,
     gameStarted,

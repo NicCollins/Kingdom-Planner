@@ -14,6 +14,7 @@ export default function KingdomPlanner() {
   const {
     state,
     allocateLabor,
+    setPolicy,
     timeSpeed,
     setTimeSpeed,
     gameStarted,
@@ -161,7 +162,9 @@ export default function KingdomPlanner() {
 
           {activeTab === "resources" && <Resources state={state} />}
 
-          {activeTab === "policies" && <Policies />}
+          {activeTab === "policies" && (
+            <Policies state={state} setPolicy={setPolicy} />
+          )}
         </div>
 
         {/* Chronicle */}
