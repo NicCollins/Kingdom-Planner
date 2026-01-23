@@ -8,6 +8,7 @@ import {
   TIME_SPEEDS,
   Expedition,
   PoliciesState,
+  RATION_EFFECTS,
 } from "../types/game";
 import { generateValidMap } from "../utils/mapGeneration";
 import {
@@ -196,17 +197,31 @@ export const useGameState = () => {
         calculateResourceCollection(newState, prev);
 
         // Food consumption
-        const foodNeeded = prev.population * 0.1;
+        const foodNeeded =
+          prev.population *
+          0.1 *
+          RATION_EFFECTS[prev.policies.foodRationing].consumptionMult;
         newState.totalFood = calculateTotalFood(prev);
+
+        let maxHappiness = 1.0;
+        if (prev.policies.foodRationing === "generous") {
+          maxHappiness = 1.2;
+        } else if (prev.policies.foodRationing === "strict") {
+          maxHappiness = 0.9;
+        }
 
         if (newState.totalFood >= foodNeeded) {
           calculateFoodConsumption(newState, foodNeeded);
 
-          if (prev.happiness < 1.0) {
-            newState.happiness = Math.min(1.0, prev.happiness + 0.01);
+          if (prev.happiness < maxHappiness) {
+            newState.happiness = Math.min(maxHappiness, prev.happiness + 0.01);
           }
         } else {
-          newState.happiness = Math.max(0.1, prev.happiness - 0.05);
+          newState.happiness = Math.min(
+            maxHappiness,
+            Math.max(0.1, prev.happiness - 0.05)
+          );
+
           if (lastStarvationDay.current !== newState.day) {
             lastStarvationDay.current = newState.day;
             addChronicleEntry(

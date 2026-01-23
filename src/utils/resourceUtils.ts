@@ -40,14 +40,42 @@ export const calculateGatheringValues = (
     1.0,
     (state.fieldCount + state.forestCount) / 15
   );
+
+  let berriesMult;
+  let sticksMult;
+  let rocksMult;
+
+  switch (state.policies.laborAllocation) {
+    case "focusFood":
+      berriesMult = 1.0;
+      sticksMult = 0.0;
+      rocksMult = 0.0;
+      break;
+    case "focusWood":
+      berriesMult = 0.0;
+      sticksMult = 1.0;
+      rocksMult = 0.0;
+      break;
+    case "focusStone":
+      berriesMult = 0.0;
+      sticksMult = 0.0;
+      rocksMult = 1.0;
+      break;
+    default:
+      berriesMult = 0.4;
+      sticksMult = 0.4;
+      rocksMult = 0.2;
+      break;
+  }
+
   const berriesGathered = Math.floor(
-    gatherers * 0.3 * gatherTerrainMult * happiness
+    gatherers * gatherTerrainMult * happiness * berriesMult
   );
   const sticksGathered = Math.floor(
-    gatherers * 0.4 * gatherTerrainMult * happiness
+    gatherers * gatherTerrainMult * happiness * sticksMult
   );
   const rocksGathered = Math.floor(
-    gatherers * 0.2 * gatherTerrainMult * happiness
+    gatherers * gatherTerrainMult * happiness * rocksMult
   );
 
   state.berries += berriesGathered;

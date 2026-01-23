@@ -75,6 +75,15 @@ export interface PoliciesState {
   laborAllocation: "balanced" | "focusFood" | "focusWood" | "focusStone";
 }
 
+export const RATION_EFFECTS: Record<
+  string,
+  { consumptionMult: number; happinessModifier: number }
+> = {
+  normal: { consumptionMult: 1.0, happinessModifier: 0 },
+  generous: { consumptionMult: 1.25, happinessModifier: 10 },
+  strict: { consumptionMult: 0.75, happinessModifier: -10 },
+};
+
 export const TIME_SPEEDS = {
   paused: 0,
   slow: 8000,
