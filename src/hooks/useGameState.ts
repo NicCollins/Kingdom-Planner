@@ -43,7 +43,7 @@ export const useGameState = () => {
       for (let r = -2; r <= 2; r++) {
         if (Math.abs(q + r) > 2) continue;
         const tile = mapTiles.get(
-          `${colonyLocation.q + q},${colonyLocation.r + r}`
+          `${colonyLocation.q + q},${colonyLocation.r + r}`,
         );
         if (tile) tile.revealed = true;
       }
@@ -120,7 +120,7 @@ export const useGameState = () => {
   const addChronicleEntry = (
     day: number,
     message: string,
-    type: "info" | "warning" | "danger" = "info"
+    type: "info" | "warning" | "danger" = "info",
   ) => {
     setChronicle((prev) => [...prev, { day, message, type }]);
   };
@@ -128,13 +128,13 @@ export const useGameState = () => {
   const startExpedition = (
     targetQ: number,
     targetR: number,
-    workers: number
+    workers: number,
   ) => {
     if (state.idle < workers) {
       addChronicleEntry(
         state.day,
         "Not enough idle workers for expedition!",
-        "warning"
+        "warning",
       );
       return false;
     }
@@ -148,7 +148,7 @@ export const useGameState = () => {
       colonyLocation.q,
       colonyLocation.r,
       targetQ,
-      targetR
+      targetR,
     );
     const duration = calculateExpeditionDuration(distance);
 
@@ -172,7 +172,7 @@ export const useGameState = () => {
     addChronicleEntry(
       state.day,
       `Expedition of ${workers} settlers departs to explore distant lands. Expected return: Day ${newExpedition.arrivalDay}.`,
-      "info"
+      "info",
     );
 
     return true;
@@ -196,19 +196,13 @@ export const useGameState = () => {
         // Calculate resource collection
         calculateResourceCollection(newState, prev);
 
+        const rationEffect = RATION_EFFECTS[prev.policies.foodRationing];
+
         // Food consumption
-        const foodNeeded =
-          prev.population *
-          0.1 *
-          RATION_EFFECTS[prev.policies.foodRationing].consumptionMult;
+        const foodNeeded = prev.population * 0.1 * rationEffect.consumptionMult;
         newState.totalFood = calculateTotalFood(prev);
 
-        let maxHappiness = 1.0;
-        if (prev.policies.foodRationing === "generous") {
-          maxHappiness = 1.2;
-        } else if (prev.policies.foodRationing === "strict") {
-          maxHappiness = 0.9;
-        }
+        const maxHappiness = 1.0 + rationEffect.happinessModifier / 100;
 
         if (newState.totalFood >= foodNeeded) {
           calculateFoodConsumption(newState, foodNeeded);
@@ -219,7 +213,7 @@ export const useGameState = () => {
         } else {
           newState.happiness = Math.min(
             maxHappiness,
-            Math.max(0.1, prev.happiness - 0.05)
+            Math.max(0.1, prev.happiness - 0.05),
           );
 
           if (lastStarvationDay.current !== newState.day) {
@@ -227,7 +221,7 @@ export const useGameState = () => {
             addChronicleEntry(
               newState.day,
               "Food supplies depleted. The colony goes hungry.",
-              "danger"
+              "danger",
             );
           }
         }
@@ -245,14 +239,14 @@ export const useGameState = () => {
                 colonyLocation.q,
                 colonyLocation.r,
                 exp.targetQ,
-                exp.targetR
+                exp.targetR,
               );
 
               if (checkExpeditionLoss(distance)) {
                 addChronicleEntry(
                   newState.day,
                   `The expedition to distant lands has gone missing. ${exp.workers} souls lost to the wilderness.`,
-                  "danger"
+                  "danger",
                 );
                 return { ...exp, status: "lost" as const };
               } else {
@@ -262,29 +256,29 @@ export const useGameState = () => {
                     colonyLocation.q,
                     colonyLocation.r,
                     exp.targetQ,
-                    exp.targetR
+                    exp.targetR,
                   );
 
                   setMapRevealCounter((prev) => prev + 1);
                   setState((s) => ({ ...s, idle: s.idle + exp.workers }));
 
                   const targetTile = mapTiles.get(
-                    `${exp.targetQ},${exp.targetR}`
+                    `${exp.targetQ},${exp.targetR}`,
                   );
                   const terrainDesc = targetTile
                     ? targetTile.terrain === "water"
                       ? "a great water"
                       : targetTile.terrain === "mountain"
-                      ? "towering peaks"
-                      : targetTile.terrain === "forest"
-                      ? "dense woodlands"
-                      : "fertile fields"
+                        ? "towering peaks"
+                        : targetTile.terrain === "forest"
+                          ? "dense woodlands"
+                          : "fertile fields"
                     : "unknown lands";
 
                   addChronicleEntry(
                     newState.day,
                     `Expedition returns! They discovered ${terrainDesc} and mapped their journey, revealing ${revealedCount} hexes. ${exp.workers} settlers rejoin the colony.`,
-                    "info"
+                    "info",
                   );
                   newState.terrainUpdated = false;
                 }
@@ -296,7 +290,7 @@ export const useGameState = () => {
 
           return updated.filter(
             (exp) =>
-              exp.status === "in-progress" || newState.day - exp.arrivalDay < 5
+              exp.status === "in-progress" || newState.day - exp.arrivalDay < 5,
           );
         });
 
