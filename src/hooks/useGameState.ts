@@ -26,6 +26,7 @@ import {
   calculateTotalFood,
 } from "@/utils/foodUtils";
 import { happinessFlavorText } from "@/utils/dictionary";
+import startState from "@/assets/startState.json";
 
 export const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -50,55 +51,12 @@ export const useGameState = () => {
     }
   }, [mapData, mapTiles, colonyLocation]);
 
-  const [policies] = useState<PoliciesState>({
-    foodRationing: "normal",
-    laborAllocation: "balanced",
-  });
-
   const [state, setState] = useState<GameState>({
-    population: 50,
-
-    policies: policies,
-
-    // Food resources - starting provisions
-    rations: 100,
-    berries: 0,
-    smallGame: 0,
-    largeGame: 0,
-    grain: 20,
-
-    // Wood resources
-    sticks: 50,
-    logs: 20,
-
-    // Stone resources
-    rocks: 30,
-    stone: 10,
-
-    tools: 5,
-    happiness: 1.0,
-
-    // Labor - starting allocation
-    gatherers: 15,
-    hunters: 5,
-    farmers: 0,
-    woodcutters: 5,
-    stoneWorkers: 3,
-    idle: 22,
-
-    day: 1,
-    season: "Spring",
-
-    // Terrain revealed count
-    terrainUpdated: false,
-    fieldCount: 0,
-    forestCount: 0,
-    mountainCount: 0,
-
-    // Resource Totals - starting values
-    totalFood: 120,
-    totalFirewood: 50,
-    totalStores: 65,
+    ...startState,
+    policies: {
+      foodRationing: "normal",
+      laborAllocation: "balanced",
+    },
   });
 
   const [timeSpeed, setTimeSpeed] = useState<TimeSpeed>("normal");

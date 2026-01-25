@@ -1,0 +1,37 @@
+{
+  "population": 50,
+
+  "rations": 100,
+  "berries": 0,
+  "smallGame": 0,
+  "largeGame": 0,
+  "grain": 20,
+
+  "sticks": 50,
+  "logs": 20,
+
+  "rocks": 30,
+  "stone": 10,
+
+  "tools": 5,
+  "happiness": 1.0,
+
+  "gatherers": 15,
+  "hunters": 5,
+  "farmers": 0,
+  "woodcutters": 5,
+  "stoneWorkers": 3,
+  "idle": 22,
+
+  "day": 1,
+  "season": "Spring",
+
+  "terrainUpdated": false,
+  "fieldCount": 0,
+  "forestCount": 0,
+  "mountainCount": 0,
+
+  "totalFood": 120,
+  "totalFirewood": 50,
+  "totalStores": 65
+}
