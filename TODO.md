@@ -1,0 +1,3 @@
+- Need to adjust research to take into account skills known by population
+- Need to have rates and ammount of collection based on an ammount available on the surrounding tiles
+- Distance villagers will go to collect gathering items should be limited, or reduced effeciency with distance
