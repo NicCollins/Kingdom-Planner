@@ -9,6 +9,7 @@ import { Resources } from "./components/Tabs/Resources";
 import { Header } from "./components/Header";
 import { Chronicle } from "./components/Chronicle";
 import { Policies } from "./components/Tabs/Policies";
+import { Research } from "./components/Tabs/Research";
 
 export default function KingdomPlanner() {
   const {
@@ -47,7 +48,7 @@ export default function KingdomPlanner() {
       const success = startExpedition(
         selectedTarget.q,
         selectedTarget.r,
-        expeditionWorkers
+        expeditionWorkers,
       );
       if (success) {
         setSelectedTarget(null); // Clear selection after sending
@@ -79,7 +80,14 @@ export default function KingdomPlanner() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
-  const tabs = ["Dashboard", "Labor", "Map", "Resources", "Policies"];
+  const tabs = [
+    "Dashboard",
+    "Labor",
+    "Map",
+    "Resources",
+    "Policies",
+    "Research",
+  ];
 
   // Show charter screen before game starts
   if (!gameStarted) {
@@ -165,6 +173,8 @@ export default function KingdomPlanner() {
           {activeTab === "policies" && (
             <Policies state={state} setPolicy={setPolicy} />
           )}
+
+          {activeTab === "research" && <Research state={state} />}
         </div>
 
         {/* Chronicle */}

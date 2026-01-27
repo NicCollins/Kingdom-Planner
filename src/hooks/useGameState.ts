@@ -9,6 +9,8 @@ import {
   Expedition,
   PoliciesState,
   RATION_EFFECTS,
+  ResearchTree,
+  ResearchItem,
 } from "../types/game";
 import { generateValidMap } from "../utils/mapGeneration";
 import {
@@ -51,12 +53,21 @@ export const useGameState = () => {
     }
   }, [mapData, mapTiles, colonyLocation]);
 
+  const [policies] = useState<PoliciesState>({
+    foodRationing: "normal",
+    laborAllocation: "balanced",
+  });
+
+  const [researchTree] = useState<ResearchTree>(() => {
+    const tree: Record<string, ResearchItem> = {};
+    // Initialize research tree here if needed
+    return tree;
+  });
+
   const [state, setState] = useState<GameState>({
     ...startState,
-    policies: {
-      foodRationing: "normal",
-      laborAllocation: "balanced",
-    },
+    policies: policies,
+    researchTree: researchTree,
   });
 
   const [timeSpeed, setTimeSpeed] = useState<TimeSpeed>("normal");

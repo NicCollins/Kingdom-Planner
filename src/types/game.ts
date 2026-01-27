@@ -12,6 +12,8 @@ export interface GameState {
 
   policies: PoliciesState;
 
+  researchTree: ResearchTree;
+
   // Food resources
   rations: number;
   berries: number;
@@ -73,6 +75,22 @@ export interface Expedition {
 export interface PoliciesState {
   foodRationing: "normal" | "generous" | "strict";
   laborAllocation: "balanced" | "focusFood" | "focusWood" | "focusStone";
+}
+
+export interface ResearchTree {
+  [id: string]: ResearchItem;
+}
+
+export interface ResearchItem {
+  id: string;
+  name: string;
+  description: string;
+  cost: {
+    science: number;
+    time: number; // in days
+  };
+  prerequisites: string[];
+  completed: boolean;
 }
 
 export const RATION_EFFECTS: Record<
