@@ -1,0 +1,13 @@
+[
+  {
+    "id": "baseFarming",
+    "name": "Base Farming",
+    "description": "Unlocks basic farming techniques to increase food production.",
+    "cost": {
+      "science": 0,
+      "time": 10
+    },
+    "prerequisites": [],
+    "completed": false
+  }
+]

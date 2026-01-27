@@ -29,6 +29,7 @@ import {
 } from "@/utils/foodUtils";
 import { happinessFlavorText } from "@/utils/dictionary";
 import startState from "@/assets/startState.json";
+import researchTreeData from "@/assets/researchTreeData.json";
 
 export const useGameState = () => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -59,8 +60,10 @@ export const useGameState = () => {
   });
 
   const [researchTree] = useState<ResearchTree>(() => {
-    const tree: Record<string, ResearchItem> = {};
-    // Initialize research tree here if needed
+    const tree: ResearchTree = {};
+    researchTreeData.forEach((item: ResearchItem) => {
+      tree[item.id] = item;
+    });
     return tree;
   });
 
